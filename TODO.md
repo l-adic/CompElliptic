@@ -72,19 +72,24 @@ types + transport) has been consolidated into these and removed.
   `SWPoint.zero` and a `Zero` instance. The bundled fields discharge the hypotheses the raw lemmas
   need, so the earlier "correctness caveat" (generic `(a b)` lemmas false on singular curves) is
   resolved by construction. `origin_not_on_curve` (`¬ OnCurve A B (0,0)`) is immediate from `B ≠ 0`.
-- [ ] Group laws — raw-kernel workhorses (currently **stated with `sorry`**) with explicit
-  `[(toW A B).IsElliptic]` / `b ≠ 0` hyps, then to be lifted to an `AddCommGroup (SWPoint E)`
-  instance that supplies the hyps from `E`'s fields:
-  - closure (`valid_add`): result coords = Mathlib `addX` / `addY`; `nonsingular_add` ⟹ on-curve.
-  - `add_comm`: direct — generic branch is pure field algebra; doubling branch forces `p = q` from
-    on-curve. No Mathlib needed.
-  - `add_assoc`: transport via an injective hom `SWPoint ↪ (toW A B).Point`, inheriting Mathlib's
-    `AddCommGroup`. The bridge derives `[(toW A B).IsElliptic]` once from `E.IsElliptic`.
-  - closure of `smul` (induction on `valid_add`).
-- [ ] Non-residue `five_not_isSquare` (Euler: `5^((p-1)/2) = -1`) ⟹ no Pallas point has `x = 0`
-  (`no_onCurve_x_zero`), in `Curves/Pasta.lean` — the spec §5.4.9.7 property the `(0,0) ≡ 𝒪`
-  representation relies on. Currently `sorry`: blocked on a `reduce_mod_char` modexp puzzle (it
-  reduces inside the Pratt-cert legs but not in a standalone lemma; `decide` then hits `maxRecDepth`).
+- [x] Group laws — raw-kernel workhorses with explicit `[(toW A B).IsElliptic]` / `b ≠ 0` hyps
+  (Lean-checked, no `sorry`; each depends only on `propext` / `Classical.choice` / `Quot.sound`):
+  - closure (`valid_add`): via `add_eq_addXY` (our `add` = Mathlib `addX` / `addY` for the
+    short form) + `nonsingular_add` ⟹ on-curve.
+  - `add_comm`: direct — generic branch is pure field algebra (`field_simp` / `ring`); doubling
+    branch forces `p = q` from on-curve (`y₁² = y₂²` with `y₁ + y₂ ≠ 0`); `𝒪` branches from the
+    identity laws. No Mathlib group needed.
+  - `add_assoc`: transport via `toPt : F × F → (toW A B).Point` (with coordinate left-inverse
+    `ofPt`) and the homomorphism `toPt_add`, inheriting Mathlib's `AddCommGroup`. Needs `b ≠ 0` so
+    the `(0, 0)` sentinel maps to `0`.
+  - [ ] still to do: lift `add` / `neg` to an `AddCommGroup (SWPoint E)` instance that supplies
+    these hyps from `E`'s bundled fields; closure of `smul` (induction on `valid_add`).
+- [x] Non-residue `five_not_isSquare` (Euler's criterion `ZMod.euler_criterion`: `5 ^ (p / 2) = -1
+  ≠ 1`) ⟹ no Pallas point has `x = 0` (`no_onCurve_x_zero`), in `Curves/Pasta.lean` — the spec
+  §5.4.9.7 property the `(0,0) ≡ 𝒪` representation relies on. The power is evaluated by
+  `reduce_mod_char` (fast modexp via `NormNum.PowMod`); finished with `decide`. (Earlier `decide`
+  `maxRecDepth` failures were from missing the `import Mathlib.NumberTheory.LegendreSymbol.Basic`
+  and applying `decide` directly to the un-reduced power.)
 - [x] Pallas `SWCurve` instance (`A = 0`, `B = 5`) in `Curves/Pasta.lean`; `IsElliptic` via
   `isUnit_iff_ne_zero` + `native_decide` (Pallas `sw_Δ = -10800 ≠ 0`), `B ≠ 0` by `decide`.
 - [ ] Vesta `SWCurve` instance (identical, over the Vesta base field).

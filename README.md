@@ -15,12 +15,15 @@ Early work in progress. Present so far:
 - the Pasta (Pallas/Vesta) base and scalar prime fields, with machine-verified Pratt primality
   certificates (`CompElliptic/Fields/Pasta.lean`);
 - a computable short-Weierstrass affine group law with correct-by-construction `SWCurve` /
-  `SWPoint` types, identity and inverse laws proved, and a transport foundation to Mathlib's
-  `WeierstrassCurve` for the remaining group axioms (`CompElliptic/CurveForms/ShortWeierstrass.lean`);
-- Pallas as a concrete `SWCurve` instance (`CompElliptic/Curves/Pasta.lean`).
+  `SWPoint` types, with closure, commutativity, and associativity fully proved — associativity by
+  transport to Mathlib's `WeierstrassCurve.Affine.Point` group (`CompElliptic/CurveForms/ShortWeierstrass.lean`);
+- Pallas as a concrete `SWCurve` instance, with `5` shown to be a quadratic non-residue (so the
+  curve has no point with `x = 0`) via Euler's criterion (`CompElliptic/Curves/Pasta.lean`).
 
-Group-law closure, commutativity, and associativity, together with the Pallas
-quadratic-non-residue fact, are currently stated with `sorry`. See `TODO.md`.
+The library currently builds with no `sorry`; the proved theorems depend only on the standard
+`propext` / `Classical.choice` / `Quot.sound` axioms. Next steps (assembling the
+`AddCommGroup (SWPoint E)` instance, the Vesta instance, and further curve forms) are tracked in
+`TODO.md`.
 
 ## License
 

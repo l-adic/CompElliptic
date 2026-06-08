@@ -142,23 +142,182 @@ Stated with the hypotheses the transport needs: `[(toW a b).IsElliptic]` through
 for the laws whose `𝒪`-sentinel cases require `(0, 0)` to be off the curve. The `SWPoint`
 `AddCommGroup` instance below discharges these from `SWCurve`'s bundled fields. -/
 
+open WeierstrassCurve.Affine
+
+/-- For two on-curve points that are neither `𝒪` nor mutual inverses, our affine `add` agrees with
+Mathlib's chord/tangent coordinates `(addX, addY)` for `toW a b`. This is the shared engine behind
+closure (and, via the `Point` group, associativity). -/
+lemma add_eq_addXY {a b : F} {x₁ y₁ x₂ y₂ : F}
+    (hp0 : (x₁, y₁) ≠ (0, 0)) (hq0 : (x₂, y₂) ≠ (0, 0))
+    (hxy : ¬(x₁ = x₂ ∧ y₁ + y₂ = 0)) :
+    add a (x₁, y₁) (x₂, y₂)
+      = (addX (toW a b) x₁ x₂ (slope (toW a b) x₁ x₂ y₁ y₂),
+         addY (toW a b) x₁ x₂ y₁ (slope (toW a b) x₁ x₂ y₁ y₂)) := by
+  have hnegY1 : negY (toW a b) x₁ y₁ = -y₁ := by simp [negY]
+  have hnegY2 : negY (toW a b) x₂ y₂ = -y₂ := by simp [negY]
+  unfold add
+  dsimp only
+  rw [if_neg hp0, if_neg hq0]
+  by_cases hx : x₁ = x₂
+  · have hy : ¬(y₁ + y₂ = 0) := fun h => hxy ⟨hx, h⟩
+    have hyne : y₁ ≠ negY (toW a b) x₂ y₂ := by
+      rw [hnegY2]; intro h; exact hy (by rw [h]; ring)
+    rw [if_pos hx, if_neg hy]
+    rw [slope_of_Y_ne hx hyne, hnegY1]
+    simp only [addX, addY, negAddY, negY, toW_a₁, toW_a₂, toW_a₃, toW_a₄, mul_zero, zero_mul, sub_zero]
+    rw [Prod.mk.injEq]
+    refine ⟨by ring, by ring⟩
+  · have hd1 : x₂ - x₁ ≠ 0 := sub_ne_zero.mpr (Ne.symm hx)
+    have hd2 : x₁ - x₂ ≠ 0 := sub_ne_zero.mpr hx
+    rw [if_neg hx]
+    rw [slope_of_X_ne hx]
+    simp only [addX, addY, negAddY, negY, toW_a₁, toW_a₂, toW_a₃, zero_mul, sub_zero]
+    rw [Prod.mk.injEq]
+    refine ⟨?_, ?_⟩ <;> field_simp <;> ring
+
 /-- Closure: `add` preserves `Valid`. (Result coords = Mathlib `addX`/`addY`; `nonsingular_add`
 gives on-curveness.) -/
 theorem valid_add {a b : F} [(toW a b).IsElliptic] {p q : F × F}
     (hp : Valid a b p) (hq : Valid a b q) : Valid a b (add a p q) := by
-  sorry
+  by_cases hp0 : p = (0, 0)
+  · rw [hp0, zero_add]; exact hq
+  by_cases hq0 : q = (0, 0)
+  · rw [hq0, add_zero]; exact hp
+  obtain ⟨x₁, y₁⟩ := p
+  obtain ⟨x₂, y₂⟩ := q
+  have hOp : OnCurve a b (x₁, y₁) := hp.resolve_right hp0
+  have hOq : OnCurve a b (x₂, y₂) := hq.resolve_right hq0
+  by_cases hinv : x₁ = x₂ ∧ y₁ + y₂ = 0
+  · right
+    obtain ⟨hx, hy⟩ := hinv
+    have hqp : (x₂, y₂) = neg (x₁, y₁) := by
+      simp only [neg, Prod.mk.injEq]
+      exact ⟨hx.symm, by linear_combination hy⟩
+    rw [hqp, add_neg]
+  · left
+    rw [add_eq_addXY hp0 hq0 hinv]
+    have hn : negY (toW a b) x₂ y₂ = -y₂ := by simp [negY]
+    have hxy' : ¬(x₁ = x₂ ∧ y₁ = negY (toW a b) x₂ y₂) := by
+      rintro ⟨hx, hyeq⟩
+      refine hinv ⟨hx, ?_⟩
+      rw [hn] at hyeq; rw [hyeq]; ring
+    have hns := nonsingular_add (nonsingular_toW hOp) (nonsingular_toW hOq) hxy'
+    exact equation_toW.mp hns.left
 
 /-- Commutativity. (Generic branch is pure field algebra; doubling branch forces `p = q` from
 on-curve; `𝒪` branches from the identity laws.) -/
 theorem add_comm {a b : F} {p q : F × F} (hp : Valid a b p) (hq : Valid a b q) :
     add a p q = add a q p := by
-  sorry
+  by_cases hp0 : p = (0, 0)
+  · rw [hp0, zero_add, add_zero]
+  by_cases hq0 : q = (0, 0)
+  · rw [hq0, zero_add, add_zero]
+  obtain ⟨x₁, y₁⟩ := p
+  obtain ⟨x₂, y₂⟩ := q
+  have hOp : OnCurve a b (x₁, y₁) := hp.resolve_right hp0
+  have hOq : OnCurve a b (x₂, y₂) := hq.resolve_right hq0
+  by_cases hinv : x₁ = x₂ ∧ y₁ + y₂ = 0
+  · obtain ⟨hx, hy⟩ := hinv
+    have e1 : add a (x₁, y₁) (x₂, y₂) = (0, 0) := by
+      have h : (x₂, y₂) = neg (x₁, y₁) := by
+        simp only [neg, Prod.mk.injEq]; exact ⟨hx.symm, by linear_combination hy⟩
+      rw [h, add_neg]
+    have e2 : add a (x₂, y₂) (x₁, y₁) = (0, 0) := by
+      have h : (x₁, y₁) = neg (x₂, y₂) := by
+        simp only [neg, Prod.mk.injEq]; exact ⟨hx, by linear_combination hy⟩
+      rw [h, add_neg]
+    rw [e1, e2]
+  · have hinv' : ¬(x₂ = x₁ ∧ y₂ + y₁ = 0) :=
+      fun ⟨hx, hy⟩ => hinv ⟨hx.symm, by linear_combination hy⟩
+    rw [add_eq_addXY (b := b) hp0 hq0 hinv, add_eq_addXY (b := b) hq0 hp0 hinv']
+    by_cases hx : x₁ = x₂
+    · have hsum : y₁ + y₂ ≠ 0 := fun h => hinv ⟨hx, h⟩
+      have hy12 : y₁ = y₂ := by
+        simp only [OnCurve] at hOp hOq
+        have hsq : (y₁ - y₂) * (y₁ + y₂) = 0 := by rw [hx] at hOp; linear_combination hOp - hOq
+        exact sub_eq_zero.mp ((mul_eq_zero.mp hsq).resolve_right hsum)
+      subst hx; subst hy12; rfl
+    · have hd1 : x₁ - x₂ ≠ 0 := sub_ne_zero.mpr hx
+      have hd2 : x₂ - x₁ ≠ 0 := sub_ne_zero.mpr (Ne.symm hx)
+      rw [slope_of_X_ne hx, slope_of_X_ne (Ne.symm hx)]
+      simp only [addX, addY, negAddY, negY, toW_a₁, toW_a₂, toW_a₃, zero_mul, sub_zero]
+      rw [Prod.mk.injEq]
+      refine ⟨?_, ?_⟩ <;> field_simp <;> ring
+
+/-! ### Transport to Mathlib's `Point` group for associativity
+
+`toPt` sends a representable point to Mathlib's `Point` (`𝒪 ↦ 0`, on-curve `(x, y) ↦ some x y`),
+with `ofPt` the coordinate left-inverse. `toPt_add` is the homomorphism property; associativity is
+then inherited from Mathlib's `AddCommGroup (toW a b).Point`. All of this needs `b ≠ 0` so that
+the `(0, 0)` sentinel maps to `0` (i.e. `(0, 0)` is genuinely off the curve). -/
+
+/-- The Mathlib point of a representable point: `𝒪 ↦ 0`, on-curve `(x, y) ↦ some x y`. -/
+noncomputable def toPt (a b : F) [(toW a b).IsElliptic] (p : F × F) : Point (toW a b) :=
+  if h : OnCurve a b p then .some p.1 p.2 (nonsingular_toW h) else 0
+
+/-- Coordinate left-inverse of `toPt` (`0 ↦ 𝒪`, `some x y _ ↦ (x, y)`). -/
+def ofPt {a b : F} (P : Point (toW a b)) : F × F :=
+  match P with
+  | .zero => (0, 0)
+  | .some x y _ => (x, y)
+
+lemma toPt_some {a b : F} [(toW a b).IsElliptic] {x y : F} (h : OnCurve a b (x, y)) :
+    toPt a b (x, y) = .some x y (nonsingular_toW h) := dif_pos h
+
+lemma toPt_zero {a b : F} (hb : b ≠ 0) [(toW a b).IsElliptic] : toPt a b (0, 0) = 0 :=
+  dif_neg (not_onCurve_zero hb)
+
+lemma ofPt_toPt {a b : F} (hb : b ≠ 0) [(toW a b).IsElliptic] {p : F × F} (hp : Valid a b p) :
+    ofPt (toPt a b p) = p := by
+  rcases hp with hOp | hp0
+  · obtain ⟨x, y⟩ := p; rw [toPt_some hOp]; rfl
+  · rw [hp0, toPt_zero hb]; rfl
+
+/-- The homomorphism property: `toPt` carries our `add` to Mathlib's `Point` addition. -/
+lemma toPt_add {a b : F} (hb : b ≠ 0) [(toW a b).IsElliptic] {p q : F × F}
+    (hp : Valid a b p) (hq : Valid a b q) :
+    toPt a b (add a p q) = toPt a b p + toPt a b q := by
+  by_cases hp0 : p = (0, 0)
+  · rw [hp0, zero_add, toPt_zero hb, _root_.zero_add]
+  by_cases hq0 : q = (0, 0)
+  · rw [hq0, add_zero, toPt_zero hb, _root_.add_zero]
+  obtain ⟨x₁, y₁⟩ := p
+  obtain ⟨x₂, y₂⟩ := q
+  have hOp : OnCurve a b (x₁, y₁) := hp.resolve_right hp0
+  have hOq : OnCurve a b (x₂, y₂) := hq.resolve_right hq0
+  have hn : negY (toW a b) x₂ y₂ = -y₂ := by simp [negY]
+  rw [toPt_some hOp, toPt_some hOq]
+  by_cases hinv : x₁ = x₂ ∧ y₁ + y₂ = 0
+  · obtain ⟨hx, hy⟩ := hinv
+    have e : add a (x₁, y₁) (x₂, y₂) = (0, 0) := by
+      have h : (x₂, y₂) = neg (x₁, y₁) := by
+        simp only [neg, Prod.mk.injEq]; exact ⟨hx.symm, by linear_combination hy⟩
+      rw [h, add_neg]
+    rw [e, toPt_zero hb, Point.add_of_Y_eq hx (by rw [hn]; linear_combination hy)]
+  · have hxy' : ¬(x₁ = x₂ ∧ y₁ = negY (toW a b) x₂ y₂) := by
+      rintro ⟨hx, hyeq⟩; exact hinv ⟨hx, by rw [hn] at hyeq; rw [hyeq]; ring⟩
+    have e : add a (x₁, y₁) (x₂, y₂)
+        = (addX (toW a b) x₁ x₂ (slope (toW a b) x₁ x₂ y₁ y₂),
+           addY (toW a b) x₁ x₂ y₁ (slope (toW a b) x₁ x₂ y₁ y₂)) :=
+      add_eq_addXY hp0 hq0 hinv
+    have hO : OnCurve a b
+        (addX (toW a b) x₁ x₂ (slope (toW a b) x₁ x₂ y₁ y₂),
+         addY (toW a b) x₁ x₂ y₁ (slope (toW a b) x₁ x₂ y₁ y₂)) :=
+      equation_toW.mp (nonsingular_add (nonsingular_toW hOp) (nonsingular_toW hOq) hxy').left
+    rw [e, Point.add_some hxy', toPt_some hO]
 
 /-- Associativity (the hard axiom), by transport to Mathlib's `Point` `AddCommGroup`. -/
 theorem add_assoc {a b : F} (hb : b ≠ 0) [(toW a b).IsElliptic] {p q r : F × F}
     (hp : Valid a b p) (hq : Valid a b q) (hr : Valid a b r) :
     add a (add a p q) r = add a p (add a q r) := by
-  sorry
+  have key : toPt a b (add a (add a p q) r) = toPt a b (add a p (add a q r)) := by
+    rw [toPt_add hb (valid_add hp hq) hr, toPt_add hb hp hq,
+      toPt_add hb hp (valid_add hq hr), toPt_add hb hq hr, _root_.add_assoc]
+  calc add a (add a p q) r
+      = ofPt (toPt a b (add a (add a p q) r)) :=
+        (ofPt_toPt hb (valid_add (valid_add hp hq) hr)).symm
+    _ = ofPt (toPt a b (add a p (add a q r))) := by rw [key]
+    _ = add a p (add a q r) := ofPt_toPt hb (valid_add hp (valid_add hq hr))
 
 /-! ## Rich bundled types -/
 

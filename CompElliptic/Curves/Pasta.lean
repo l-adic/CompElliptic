@@ -6,6 +6,7 @@ Authors: Daira-Emma Hopwood
 -/
 import CompElliptic.CurveForms.ShortWeierstrass
 import CompElliptic.Fields.Pasta
+import Mathlib.NumberTheory.LegendreSymbol.Basic
 
 /-!
 # The Pasta curves as short-Weierstrass elliptic curves
@@ -50,16 +51,16 @@ theorem not_onCurve_zero : ¬ OnCurve a b (0, 0) :=
 /-- `5` is a quadratic non-residue in the Pallas base field, so `y² = x³ + 5` has no point with
 `x = 0` — the property the `(0,0) ≡ 𝒪` representation relies on (Zcash protocol spec §5.4.9.7).
 
-True: Euler's criterion gives `5 ^ ((p-1)/2) = -1` (confirmed by PARI/GP and by this field's own
-Pratt-cert `≠ 1` leg). The proof is `sorry` pending mechanization — plain `reduce_mod_char`
-reduces that power inside the `PrattPartList.prime` legs but not in a standalone lemma here
-(`decide` then hits `maxRecDepth`), and the Mathlib quadratic-residue lemma name still needs
-pinning down (`ZMod.euler_criterion` was wrong). See `TODO.md`. -/
+Euler's criterion (`ZMod.euler_criterion`) reduces this to `5 ^ (p / 2) ≠ 1`. The LHS (`-1`) is
+evaluated by `reduce_mod_char` (fast modular exponentiation via `NormNum.PowMod`), the same
+machinery the `PrattPartList.prime` legs use for their `a ^ k ≠ 1` conditions. -/
 theorem five_not_isSquare : ¬ IsSquare (5 : PallasBaseField) := by
-  sorry
+  rw [ZMod.euler_criterion PALLAS_BASE_CARD (by decide : (5 : PallasBaseField) ≠ 0)]
+  reduce_mod_char
+  decide
 
 /-- Consequently no point on the Pallas curve has `x`-coordinate `0`, so `x = 0` denotes `𝒪`
-unambiguously. Proved from `five_not_isSquare` (so it inherits only that one `sorry`). -/
+unambiguously. -/
 theorem no_onCurve_x_zero (y : PallasBaseField) : ¬ OnCurve a b (0, y) := by
   intro h
   have h' : y ^ 2 = 5 := by simpa [OnCurve, a, b] using h
