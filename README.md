@@ -29,8 +29,9 @@ makes mistakes visible rather than silent:
    a bit sequence; a byte encoding is a further step), not the bare coordinate quotient.
 4. **No class of mistake you can make in a cryptographic protocol is hidden by the API.** The type
    discipline exists to turn each potential error — treating a non-canonical encoding as canonical,
-   using raw coordinates as a group element without the on-curve check, or using circuit cells that
-   are not anchored to their intended source — into a visible, type-level obligation.
+   getting an encoding's bit ordering (endianness) wrong, using raw coordinates as a group element
+   without the on-curve check, or using circuit cells that are not anchored to their intended
+   source — into a visible, type-level obligation.
 
 A secondary criterion, ranked below the four above and sometimes in tension with them: the type a
 specification writer reaches for as a *group element* should not be horribly inefficient for general

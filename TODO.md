@@ -142,9 +142,13 @@ types + transport) has been consolidated into these and removed.
 - [ ] Projective (and/or Jacobian) coordinate system with inversion-free complete formulas,
   transported to Mathlib's `Projective.Point` group, designated the canonical efficient group element
   (`Point`); explicit `toAffine` / `fromAffine` conversions. (Per the efficiency criterion.)
-- [ ] Represented group (spec §5.4.9): a group-element type bundled with `repr` / `abst` to byte /
-  bit sequences as a canonical bijection; Sapling's non-canonical-encoding acceptance as a separate
-  lenient `abst'` layer.
+- [ ] Represented group (spec §5.4.9): a group-element type bundled with `repr` / `abst` as a
+  canonical bijection. The serialization type is a *parameter*: support byte-oriented protocols
+  *directly* (no forced bit-sequence detour) as well as Zcash's bit-oriented
+  `repr_𝔾` → bits → `LEBS2OSP` → bytes. Distinct bit-sequence / byte-sequence types; explicit
+  endianness-bearing conversions named after the spec primitives (`LEBS2OSP` etc.) — bit ordering is
+  a mistake class (a Sapling testnet bug). Sapling's non-canonical-encoding acceptance goes in a
+  separate lenient `abst'` layer.
 - [ ] Pairings (will be needed eventually): a represented-pairing abstraction — a bilinear
   `e : G₁ × G₂ → G_T` (the spec's §5.4.9 also covers represented pairings) — and a pairing-friendly
   curve such as BLS12-381 (used by Sapling / Groth16). Mathlib has `WeierstrassCurve` pairing
