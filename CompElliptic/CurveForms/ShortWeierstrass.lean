@@ -6,6 +6,7 @@ Authors: Daira-Emma Hopwood
 -/
 import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 import Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms
+import CompElliptic.CoordinateSystem
 
 /-!
 # Short-Weierstrass elliptic curves
@@ -428,5 +429,35 @@ theorem coords_nsmul {E : SWCurve F} (n : ℕ) (P : SWPoint E) :
     show add E.A ((k • P).x, (k • P).y) (P.x, P.y) = smul E.A (k + 1) (P.x, P.y)
     rw [ih]
     rfl
+
+/-! ## The affine coordinate system
+
+`E` as an instance of the general `CoordinateSystem` abstraction: the injective (`Rel = Eq`) case,
+built from the proven affine group law. This validates `CoordinateSystem` against a real curve. Its
+`.Quot` is the affine group element (a quotient by `Eq`, hence isomorphic to `SWPoint E`). -/
+
+/-- The affine coordinate system of a short-Weierstrass curve `E` (`Rel = Eq`). -/
+def affineCoordinateSystem (E : SWCurve F) : CoordinateSystem (F × F) :=
+  haveI := instIsElliptic E
+  { Valid := ShortWeierstrass.Valid E.A E.B
+    Rel := Eq
+    zero := (0, 0)
+    add := ShortWeierstrass.add E.A
+    neg := ShortWeierstrass.neg
+    valid_zero := Or.inr rfl
+    valid_add := fun hp hq => ShortWeierstrass.valid_add hp hq
+    valid_neg := fun h => ShortWeierstrass.valid_neg h
+    rel_refl := fun _ => rfl
+    rel_symm := Eq.symm
+    rel_trans := Eq.trans
+    add_congr := fun ha hb => by rw [ha, hb]
+    neg_congr := fun ha => by rw [ha]
+    zero_add := fun {p} _ => ShortWeierstrass.zero_add E.A p
+    add_zero := fun {p} _ => ShortWeierstrass.add_zero E.A p
+    add_assoc := fun hp hq hr => ShortWeierstrass.add_assoc E.B_nonzero hp hq hr
+    add_comm := fun hp hq => ShortWeierstrass.add_comm hp hq
+    neg_add := fun {p} h => by
+      rw [ShortWeierstrass.add_comm (ShortWeierstrass.valid_neg h) h]
+      exact ShortWeierstrass.add_neg E.A p }
 
 end CompElliptic.CurveForms.ShortWeierstrass
