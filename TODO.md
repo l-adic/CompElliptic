@@ -92,7 +92,8 @@ types + transport) has been consolidated into these and removed.
   and applying `decide` directly to the un-reduced power.)
 - [x] Pallas `SWCurve` instance (`A = 0`, `B = 5`) in `Curves/Pasta.lean`; `IsElliptic` via
   `isUnit_iff_ne_zero` + `native_decide` (Pallas `sw_Δ = -10800 ≠ 0`), `B ≠ 0` by `decide`.
-- [ ] Vesta `SWCurve` instance (identical, over the Vesta base field).
+- [x] Vesta `SWCurve` instance (identical, over the Vesta base field), with its own
+  `five_not_isSquare` / `no_onCurve_x_zero` (`5` is a non-residue in the Vesta base field too).
 - [ ] A windowed / double-and-add `smul` matching the circuit's scalar decomposition. (The
   iterated-add `smul` is adequate for *stating* soundness; the circuit's structure is what the
   gadget proofs reduce to.)

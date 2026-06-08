@@ -11,10 +11,10 @@ import Mathlib.NumberTheory.LegendreSymbol.Basic
 /-!
 # The Pasta curves as short-Weierstrass elliptic curves
 
-Concrete `SWCurve` instances for Pallas (`y² = x³ + 5` over the Pallas base field) — Vesta is
-identical over the Vesta base field and is a TODO. Plus the curve-specific facts the `(0, 0) ≡ 𝒪`
-representation relies on (`five_not_isSquare` ⟹ `no_onCurve_x_zero`, spec §5.4.9.7) and
-`native_decide` sanity checks exercising the raw computable kernel.
+Concrete `SWCurve` instances for Pallas and Vesta (both `y² = x³ + 5`, over the Pallas and Vesta
+base fields respectively). Plus the curve-specific facts the `(0, 0) ≡ 𝒪` representation relies on
+(`five_not_isSquare` ⟹ `no_onCurve_x_zero`, spec §5.4.9.7) and `native_decide` sanity checks
+exercising the raw computable kernel.
 
 Sanity checks use `native_decide` (compiler-trusted): they exercise the *definitions*
 computationally and are independent of the soundness theorems to come.
@@ -49,7 +49,7 @@ theorem not_onCurve_zero : ¬ OnCurve a b (0, 0) :=
   CurveForms.ShortWeierstrass.not_onCurve_zero b_ne_zero
 
 /-- `5` is a quadratic non-residue in the Pallas base field, so `y² = x³ + 5` has no point with
-`x = 0` — the property the `(0,0) ≡ 𝒪` representation relies on (Zcash protocol spec §5.4.9.7).
+`x = 0` (Zcash protocol spec §5.4.9.7).
 
 Euler's criterion (`ZMod.euler_criterion`) reduces this to `5 ^ (p / 2) ≠ 1`. The LHS (`-1`) is
 evaluated by `reduce_mod_char` (fast modular exponentiation via `NormNum.PowMod`), the same
@@ -80,5 +80,61 @@ example : OnCurve a b (smul a 2 G) := by native_decide
 example : OnCurve a b (smul a 3 G) := by native_decide
 
 end Pallas
+
+namespace Vesta
+
+/-- Vesta: `y² = x³ + 5` over the Vesta base field (`= PallasScalarField`; `A = 0`, `B = 5`). -/
+def a : VestaBaseField := 0
+def b : VestaBaseField := 5
+
+/-- A convenient prime-order point `(-1, 2)` for testing (just a test point, not a
+protocol-specified base). -/
+def G : VestaBaseField × VestaBaseField := (-1, 2)
+
+theorem b_ne_zero : b ≠ 0 := by decide
+
+/-- The Vesta curve as a rich `SWCurve`: ellipticity (`sw_Δ 0 5 = -10800 ≠ 0`, so `IsUnit`) and
+`B ≠ 0` discharged by computation. -/
+def curve : SWCurve VestaBaseField where
+  A := a
+  B := b
+  IsElliptic := by rw [isUnit_iff_ne_zero]; native_decide
+  B_nonzero := b_ne_zero
+
+/-- The `(0, 0)` sentinel is off the Vesta curve. -/
+theorem not_onCurve_zero : ¬ OnCurve a b (0, 0) :=
+  CurveForms.ShortWeierstrass.not_onCurve_zero b_ne_zero
+
+/-- `5` is a quadratic non-residue in the Vesta base field, so `y² = x³ + 5` has no point with
+`x = 0` (Zcash protocol spec §5.4.9.7).
+
+As for Pallas: Euler's criterion (`ZMod.euler_criterion`) reduces this to `5 ^ (q / 2) ≠ 1`, and
+`reduce_mod_char` (fast modular exponentiation) evaluates the power to `-1`. -/
+theorem five_not_isSquare : ¬ IsSquare (5 : VestaBaseField) := by
+  rw [ZMod.euler_criterion PALLAS_SCALAR_CARD (by decide : (5 : VestaBaseField) ≠ 0)]
+  reduce_mod_char
+  decide
+
+/-- Consequently no point on the Vesta curve has `x`-coordinate `0`, so `x = 0` denotes `𝒪`
+unambiguously. -/
+theorem no_onCurve_x_zero (y : VestaBaseField) : ¬ OnCurve a b (0, y) := by
+  intro h
+  have h' : y ^ 2 = 5 := by simpa [OnCurve, a, b] using h
+  exact five_not_isSquare ⟨y, by rw [← h', pow_two]⟩
+
+-- `(-1, 2)` is on the curve: `2² = 4 = (-1)³ + 5`.
+example : OnCurve a b G := by native_decide
+
+-- `G + (-G) = 𝒪` (hits the `q = -p` branch; no inversion).
+example : add a G (neg G) = (0, 0) := by native_decide
+
+-- `G + 𝒪 = G`.
+example : add a G (0, 0) = G := by native_decide
+
+-- Doubling and tripling stay on the curve (exercises the slope/inverse).
+example : OnCurve a b (smul a 2 G) := by native_decide
+example : OnCurve a b (smul a 3 G) := by native_decide
+
+end Vesta
 
 end CompElliptic.Curves.Pasta
