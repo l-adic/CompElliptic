@@ -20,6 +20,8 @@ representation, byte sequence, bit sequence, circuit representation, and coordin
   (Project Tachyon).
 - **Other circuit frameworks:** gnark, circom / circomlib, Noir.
 - **Classic C / C++:** RELIC, BLST, libff, OpenSSL, MIRACL, libsodium.
+- **Standards:** RFC 9380 (hashing to elliptic curves), RFC 9496 (ristretto255 / decaf448), and the
+  Ristretto explainer (ristretto.group).
 
 ## Consensus vocabulary
 
@@ -121,8 +123,18 @@ Two cautions stand out for a library that wants unambiguous names:
 - **ArkLib (Lean):** a two-parameter `Serialize α β` / `Deserialize α β` / `Serde α β` class family
   with `β = ByteArray` or `BitVec n`, plus `Serialize.IsInjective`.
 - **Zcash spec §5.4.9** names this bundle a **represented group**: a group together with `repr_𝔾`
-  and a partial `abst_𝔾` such that `abst ∘ repr = id`. This is the term CompElliptic reserves for the
-  encoding bundle.
+  and a partial `abst_𝔾` such that `abst ∘ repr = id`. Note `repr_𝔾 : 𝔾 → 𝔹^[ℓ]` yields a
+  **bit-sequence** serialization (`𝔹^[ℓ]` is a sequence of `ℓ` bits); a byte serialization is a
+  further, separate step. This is the term CompElliptic reserves for the encoding bundle.
+- **RFC 9496** (ristretto255 / decaf448) makes exactly CompElliptic's group-element-vs-representation
+  distinction, and even uses the term: an *"element encoding"* is *"the unique reversible encoding of
+  a group element"*, and an *"internal representation"* is *"a point on the curve used to implement
+  ristretto255"* (extended coordinates `(x, y, z, t)`). `Encode` / `Decode`, 32-byte (octet) strings,
+  with *"non-canonical values rejected"* on decode — a canonical encoding. ristretto255 is framed as
+  a *"prime-order group"* abstraction over a cofactor-8 curve. RFC 9380 (hash-to-curve) speaks of
+  *"points with affine coordinates (x, y)"* in the prime-order subgroup `G`, with the
+  `hash_to_field` / `map_to_curve` / `clear_cofactor` / `hash_to_curve` pipeline, `I2OSP` / `OS2IP`
+  for integer-octet conversion; it explicitly *"does not cover serialization"* of points.
 
 ### In-circuit representations
 
@@ -198,7 +210,13 @@ Geometry and the Zcash specification:
 
 - Explicit-Formulas Database — <https://www.hyperelliptic.org/EFD/>
 - D. J. Bernstein, "The Explicit-Formulas Database" (slides) — <https://cr.yp.to/talks/2007.09.05/slides.pdf>
-- Zcash Protocol Specification — <https://zips.z.cash/protocol/protocol.pdf> (§5.4.9, represented groups and pairings)
+- Zcash Protocol Specification §5.4.9 (represented groups and pairings) — <https://zips.z.cash/protocol/protocol.pdf#concretepairing>
+
+Standards:
+
+- RFC 9380, Hashing to Elliptic Curves — <https://www.rfc-editor.org/rfc/rfc9380.html>
+- RFC 9496, The ristretto255 and decaf448 Groups — <https://www.rfc-editor.org/rfc/rfc9496.html>
+- Ristretto — <https://ristretto.group>
 
 Formal / Lean:
 

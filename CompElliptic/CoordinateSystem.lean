@@ -24,8 +24,8 @@ the quotient machinery lives here, not in each form.
 The name follows the [Explicit-Formulas Database](https://www.hyperelliptic.org/EFD/). This is *not*
 a "represented group" in the sense of the
 [Zcash Protocol Specification §5.4.9](https://zips.z.cash/protocol/protocol.pdf#concretepairing) —
-that names a group with a byte `repr` / `abst` encoding, a separate abstraction. See `../README.md`
-and `design/naming-survey.md`.
+that names a group with a bit-sequence `repr` / `abst` encoding, a separate abstraction. See
+`../README.md` and `design/naming-survey.md`.
 -/
 
 namespace CompElliptic

@@ -20,9 +20,9 @@ These are fixed; see also `README.md`.
 3. **Terminology follows the Zcash Protocol Specification and common cryptographic usage** (which do
    not conflict). In particular the
    [Zcash Protocol Specification §5.4.9](https://zips.z.cash/protocol/protocol.pdf#concretepairing)
-   "represented group" = a group bundled with its `repr` / `abst` byte encoding, so that name is
-   reserved for the encoding bundle, not the coordinate quotient (which is the "internal
-   representation" layer).
+   "represented group" = a group bundled with its `repr` / `abst` encoding (`repr_𝔾` maps to a
+   bit sequence; a byte encoding is a further step), so that name is reserved for the encoding bundle,
+   not the coordinate quotient (which is the "internal representation" layer).
 4. **No class of mistake you can make in a cryptographic protocol is hidden by the API** — the type
    discipline turns each potential error (non-canonical encoding treated as canonical, raw
    coordinates used as a group element without the on-curve check, circuit cells not anchored to

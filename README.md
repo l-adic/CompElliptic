@@ -25,8 +25,8 @@ makes mistakes visible rather than silent:
 3. **Terminology follows the Zcash Protocol Specification and common cryptographic usage** (which do
    not conflict). For example, a *represented group* is — as in the
    [Zcash Protocol Specification §5.4.9](https://zips.z.cash/protocol/protocol.pdf#concretepairing) —
-   a group together with its byte representation and abstraction functions, not the bare coordinate
-   quotient.
+   a group together with its bit-sequence representation and abstraction functions (`repr_𝔾` maps to
+   a bit sequence; a byte encoding is a further step), not the bare coordinate quotient.
 4. **No class of mistake you can make in a cryptographic protocol is hidden by the API.** The type
    discipline exists to turn each potential error — treating a non-canonical encoding as canonical,
    using raw coordinates as a group element without the on-curve check, or using circuit cells that
