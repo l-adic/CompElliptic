@@ -86,8 +86,8 @@ types + transport) has been consolidated into these and removed.
     `toW_Δ` + `instIsElliptic` bridging `E.IsElliptic` to `(toW E.A E.B).IsElliptic`, and the raw
     laws transported through `SWPoint.ext_pair`. So `+`, `-`, `0`, and `n • P` / `k • P` work on
     `SWPoint E` for any `SWCurve`.
-  - [ ] still to do: closure of the raw `smul` (induction on `valid_add`), and relating it to the
-    group `•`.
+  - [x] closure of the raw `smul` (`valid_smul`, induction on `valid_add`) and `coords_nsmul`
+    relating the group action `n • P` to the spec-level `smul` on the underlying coordinates.
 - [x] Non-residue `five_not_isSquare` (Euler's criterion `ZMod.euler_criterion`: `5 ^ (p / 2) = -1
   ≠ 1`) ⟹ no Pallas point has `x = 0` (`no_onCurve_x_zero`), in `Curves/Pasta.lean` — the spec
   §5.4.9.7 property the `(0,0) ≡ 𝒪` representation relies on. The power is evaluated by

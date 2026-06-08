@@ -327,6 +327,12 @@ theorem valid_neg {a b : F} {p : F × F} (hp : Valid a b p) : Valid a b (neg p) 
   · left; simp only [OnCurve, neg] at h ⊢; linear_combination h
   · right; rw [h]; simp [neg]
 
+/-- Closure of the spec-level `smul`: `n • p` stays `Valid`, by induction on `valid_add`. -/
+theorem valid_smul {a b : F} [(toW a b).IsElliptic] {p : F × F} (hp : Valid a b p) :
+    ∀ n : ℕ, Valid a b (smul a n p)
+  | 0 => Or.inr rfl
+  | n + 1 => valid_add (valid_smul hp n) hp
+
 /-! ## Rich bundled types -/
 
 /-- The discriminant of the short-Weierstrass curve `y² = x³ + A x + B`. -/
@@ -410,5 +416,17 @@ instance (E : SWCurve F) : AddCommGroup (SWPoint E) where
     show add E.A (neg (P.x, P.y)) (P.x, P.y) = (0, 0)
     rw [add_comm (valid_neg P.onCurve) P.onCurve]
     exact add_neg E.A (P.x, P.y))
+
+/-- The group action `n • P` on `SWPoint E` is the spec-level `smul` on the underlying coordinates,
+so the two notions of scalar multiplication agree. -/
+theorem coords_nsmul {E : SWCurve F} (n : ℕ) (P : SWPoint E) :
+    ((n • P).x, (n • P).y) = smul E.A n (P.x, P.y) := by
+  induction n with
+  | zero => rfl
+  | succ k ih =>
+    rw [succ_nsmul]
+    show add E.A ((k • P).x, (k • P).y) (P.x, P.y) = smul E.A (k + 1) (P.x, P.y)
+    rw [ih]
+    rfl
 
 end CompElliptic.CurveForms.ShortWeierstrass
