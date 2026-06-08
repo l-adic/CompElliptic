@@ -69,7 +69,8 @@ def add (a : F) (p q : F × F) : F × F :=
     let x₃ := lam ^ 2 - p.1 - q.1
     (x₃, lam * (p.1 - x₃) - p.2)
 
-/-- `[n] p`, by iterated addition (spec-level, not the windowed circuit form). -/
+/-- `n • p`, by iterated addition (spec-level, not the windowed circuit form). On `SWPoint E` the
+`AddCommGroup` instance below provides the genuine `n • _` / `k • _` scalar actions. -/
 def smul (a : F) : ℕ → F × F → F × F
   | 0, _ => (0, 0)
   | n + 1, p => add a (smul a n p) p
@@ -319,6 +320,13 @@ theorem add_assoc {a b : F} (hb : b ≠ 0) [(toW a b).IsElliptic] {p q r : F × 
     _ = ofPt (toPt a b (add a p (add a q r))) := by rw [key]
     _ = add a p (add a q r) := ofPt_toPt hb (valid_add hp (valid_add hq hr))
 
+omit [DecidableEq F] in
+/-- `neg` preserves `Valid` (on-curve since `(-y)² = y²`; the `𝒪` sentinel is fixed). -/
+theorem valid_neg {a b : F} {p : F × F} (hp : Valid a b p) : Valid a b (neg p) := by
+  rcases hp with h | h
+  · left; simp only [OnCurve, neg] at h ⊢; linear_combination h
+  · right; rw [h]; simp [neg]
+
 /-! ## Rich bundled types -/
 
 /-- The discriminant of the short-Weierstrass curve `y² = x³ + A x + B`. -/
@@ -348,9 +356,59 @@ theorem origin_not_on_curve (E : SWCurve F) : ¬ OnCurve E.A E.B (0, 0) :=
 /-- The identity point `𝒪` on `E`. -/
 def SWPoint.zero (E : SWCurve F) : SWPoint E := ⟨0, 0, Or.inr rfl⟩
 
-instance (E : SWCurve F) : Zero (SWPoint E) := ⟨SWPoint.zero E⟩
+omit [DecidableEq F] in
+/-- For the short form, Mathlib's Weierstrass discriminant is our `sw_Δ`. -/
+lemma toW_Δ (A B : F) : (toW A B).Δ = sw_Δ A B := by
+  simp only [WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆,
+    WeierstrassCurve.b₈, toW_a₁, toW_a₂, toW_a₃, toW_a₄, toW_a₆, sw_Δ]
+  ring
 
--- TODO (next): bridge `[(E.toW).IsElliptic]` from `E.IsElliptic`, lift `add`/`neg` to `SWPoint E`
--- via `valid_add`, and assemble the `AddCommGroup (SWPoint E)` instance.
+/-- `E`'s bundled `IsUnit (sw_Δ ..)` is exactly Mathlib's ellipticity of `toW E.A E.B`, so the raw
+group-law lemmas (which require `[(toW A B).IsElliptic]`) apply to `E` by instance resolution. -/
+instance instIsElliptic (E : SWCurve F) : (toW E.A E.B).IsElliptic where
+  isUnit := by rw [toW_Δ]; exact E.IsElliptic
+
+omit [DecidableEq F] in
+/-- Two representable points are equal when their coordinate pairs agree (`onCurve` is a `Prop`). -/
+theorem SWPoint.ext_pair {E : SWCurve F} {P Q : SWPoint E}
+    (h : (P.x, P.y) = (Q.x, Q.y)) : P = Q := by
+  obtain ⟨px, py, hP⟩ := P
+  obtain ⟨qx, qy, hQ⟩ := Q
+  injection h with hx hy
+  subst hx; subst hy; rfl
+
+/-- Addition lifted to `SWPoint E`; closure from `valid_add`. -/
+def sw_add {E : SWCurve F} (P Q : SWPoint E) : SWPoint E :=
+  haveI := instIsElliptic E
+  ⟨(add E.A (P.x, P.y) (Q.x, Q.y)).1, (add E.A (P.x, P.y) (Q.x, Q.y)).2,
+   valid_add P.onCurve Q.onCurve⟩
+
+/-- Negation lifted to `SWPoint E`; closure from `valid_neg`. -/
+def sw_neg {E : SWCurve F} (P : SWPoint E) : SWPoint E :=
+  ⟨(neg (P.x, P.y)).1, (neg (P.x, P.y)).2, valid_neg P.onCurve⟩
+
+instance (E : SWCurve F) : Zero (SWPoint E) := ⟨SWPoint.zero E⟩
+instance (E : SWCurve F) : Add (SWPoint E) := ⟨sw_add⟩
+instance (E : SWCurve F) : Neg (SWPoint E) := ⟨sw_neg⟩
+
+/-- The abelian group of representable points on `E`: identity laws and inverses are immediate;
+commutativity and associativity transport from the raw `add` lemmas, whose hypotheses `E`'s bundled
+fields (`IsElliptic`, `B_nonzero`) discharge. -/
+instance (E : SWCurve F) : AddCommGroup (SWPoint E) where
+  add := sw_add
+  zero := SWPoint.zero E
+  neg := sw_neg
+  nsmul := nsmulRec
+  zsmul := zsmulRec
+  add_assoc P Q R := by
+    haveI := instIsElliptic E
+    exact SWPoint.ext_pair (add_assoc E.B_nonzero P.onCurve Q.onCurve R.onCurve)
+  zero_add P := SWPoint.ext_pair (ShortWeierstrass.zero_add E.A (P.x, P.y))
+  add_zero P := SWPoint.ext_pair (ShortWeierstrass.add_zero E.A (P.x, P.y))
+  add_comm P Q := SWPoint.ext_pair (add_comm P.onCurve Q.onCurve)
+  neg_add_cancel P := SWPoint.ext_pair (by
+    show add E.A (neg (P.x, P.y)) (P.x, P.y) = (0, 0)
+    rw [add_comm (valid_neg P.onCurve) P.onCurve]
+    exact add_neg E.A (P.x, P.y))
 
 end CompElliptic.CurveForms.ShortWeierstrass

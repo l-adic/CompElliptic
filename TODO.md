@@ -82,8 +82,12 @@ types + transport) has been consolidated into these and removed.
   - `add_assoc`: transport via `toPt : F × F → (toW A B).Point` (with coordinate left-inverse
     `ofPt`) and the homomorphism `toPt_add`, inheriting Mathlib's `AddCommGroup`. Needs `b ≠ 0` so
     the `(0, 0)` sentinel maps to `0`.
-  - [ ] still to do: lift `add` / `neg` to an `AddCommGroup (SWPoint E)` instance that supplies
-    these hyps from `E`'s bundled fields; closure of `smul` (induction on `valid_add`).
+  - [x] `AddCommGroup (SWPoint E)` instance: `sw_add` / `sw_neg` lifted via `valid_add` / `valid_neg`,
+    `toW_Δ` + `instIsElliptic` bridging `E.IsElliptic` to `(toW E.A E.B).IsElliptic`, and the raw
+    laws transported through `SWPoint.ext_pair`. So `+`, `-`, `0`, and `n • P` / `k • P` work on
+    `SWPoint E` for any `SWCurve`.
+  - [ ] still to do: closure of the raw `smul` (induction on `valid_add`), and relating it to the
+    group `•`.
 - [x] Non-residue `five_not_isSquare` (Euler's criterion `ZMod.euler_criterion`: `5 ^ (p / 2) = -1
   ≠ 1`) ⟹ no Pallas point has `x = 0` (`no_onCurve_x_zero`), in `Curves/Pasta.lean` — the spec
   §5.4.9.7 property the `(0,0) ≡ 𝒪` representation relies on. The power is evaluated by

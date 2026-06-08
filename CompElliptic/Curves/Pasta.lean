@@ -79,6 +79,13 @@ example : add a G (0, 0) = G := by native_decide
 example : OnCurve a b (smul a 2 G) := by native_decide
 example : OnCurve a b (smul a 3 G) := by native_decide
 
+-- The `AddCommGroup (SWPoint curve)` instance provides working scalar actions `n • _` (over `ℕ`)
+-- and `k • _` (over `ℤ`), interoperating with the generic group lemmas.
+example (P : SWPoint curve) : (0 : ℕ) • P = 0 := zero_nsmul P
+example (P : SWPoint curve) : (2 : ℕ) • P = P + P := two_nsmul P
+example (P : SWPoint curve) : (1 : ℤ) • P = P := one_zsmul P
+example (P : SWPoint curve) : (-1 : ℤ) • P = -P := neg_one_zsmul P
+
 end Pallas
 
 namespace Vesta
