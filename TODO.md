@@ -5,6 +5,38 @@ verification that motivates it (CompElliptic itself is a general-purpose computa
 Entries are brief; design context lives in the module doc-comments and in the Claude project
 memory `project_orchard_ecc_lean_verification`.
 
+## Design principles (foundational)
+
+These are fixed; see also `README.md`.
+
+1. **One Lean type per abstraction level**, kept distinct: *group element* (the mathematical
+   notion); *internal representation* of a group element (a quotient in general — valid coordinate
+   representatives modulo an equivalence: equality for affine forms, non-trivial for projective /
+   Jacobian); *byte-sequence* representation; *bit-sequence* representation; *circuit* representation
+   (can be several, typically two field elements); and *coordinates* (field elements tagged with
+   which kind of coordinate they are).
+2. **Conversions between these types are always explicit** — no hidden coercions across abstraction
+   levels.
+3. **Terminology follows the Zcash Protocol Specification and common cryptographic usage** (which do
+   not conflict). In particular the
+   [Zcash Protocol Specification §5.4.9](https://zips.z.cash/protocol/protocol.pdf#concretepairing)
+   "represented group" = a group bundled with its `repr` / `abst` byte encoding, so that name is
+   reserved for the encoding bundle, not the coordinate quotient (which is the "internal
+   representation" layer).
+4. **No class of mistake you can make in a cryptographic protocol is hidden by the API** — the type
+   discipline turns each potential error (non-canonical encoding treated as canonical, raw
+   coordinates used as a group element without the on-curve check, circuit cells not anchored to
+   their source, ...) into a visible, type-level obligation. Keep historical warts (e.g. Sapling's
+   non-canonical-encoding acceptance) out of the core abstractions, as separate lenient layers.
+
+Secondary criterion (ranked below the four above; may be in tension): the type a spec writer reaches
+for as a *group element* should not be horribly inefficient for general computation. It may be
+*implemented* in a more efficient coordinate system (inversion-free projective / Jacobian, complete
+formulas) so long as it abstractly means "group element". So the canonical computable group element
+should be projective/Jacobian-backed, not affine (affine `add` needs a field inversion per op, so the
+affine-backed `smul` is the "horribly inefficient" case); affine is a coordinate system for encoding
+/ readability, reached by explicit conversion.
+
 ## Design decisions (settled)
 
 - **Style: rich typing / correct-by-construction**, à la carte per curve form and coordinate
@@ -104,8 +136,25 @@ types + transport) has been consolidated into these and removed.
 
 ## CompElliptic — other forms & the group abstraction (later)
 
-- [ ] Represented-group / pairing abstraction that each curve form implements (the locus of
-  generality; setoid/quotient for non-injective coordinate representations).
+- [x] Coordinate-system abstraction (`CoordinateSystem.lean`): carrier + `Valid` + `Rel` + ops →
+  derived `AddCommGroup` on the quotient. The locus of generality; the setoid/quotient that
+  non-injective coordinate systems need lives here. Affine is the `Rel = Eq` instance.
+- [ ] Projective (and/or Jacobian) coordinate system with inversion-free complete formulas,
+  transported to Mathlib's `Projective.Point` group, designated the canonical efficient group element
+  (`Point`); explicit `toAffine` / `fromAffine` conversions. (Per the efficiency criterion.)
+- [ ] Represented group (spec §5.4.9): a group-element type bundled with `repr` / `abst` to byte /
+  bit sequences as a canonical bijection; Sapling's non-canonical-encoding acceptance as a separate
+  lenient `abst'` layer.
+- [ ] Pairings (will be needed eventually): a represented-pairing abstraction — a bilinear
+  `e : G₁ × G₂ → G_T` (the spec's §5.4.9 also covers represented pairings) — and a pairing-friendly
+  curve such as BLS12-381 (used by Sapling / Groth16). Mathlib has `WeierstrassCurve` pairing
+  material and the zkcrypto `pairing::Engine` shape is a naming reference.
+- [ ] AGM (Algebraic Group Model) group representation (will likely be needed): the notion that any
+  group element an algebraic adversary outputs comes with a *representation* as a linear combination
+  of the group elements it has seen — ArkLib's `AGM.GroupRepresentation` is exponents plus a proof
+  the target equals that combination. Needed for knowledge-soundness / extractor arguments. Likely
+  import or adapt from ArkLib rather than reinvent. NB: this is a *third* sense of "representation"
+  (distinct from coordinate and byte representations) — keep the naming distinct.
 - [ ] Twisted Edwards form (`CurveForms/CtEdwards.lean`; port/adapt `Zcash/Math/CtEdwards.lean` —
   complete addition, so closure and commutativity are near-syntactic). Needed for Sapling (Jubjub).
 - [ ] Montgomery form (`CurveForms/Montgomery.lean`) and x-only ladder if/when a gadget needs them.
