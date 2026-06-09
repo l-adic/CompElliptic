@@ -46,15 +46,21 @@ Early work in progress. Present so far:
 - the Pasta (Pallas/Vesta) base and scalar prime fields, with machine-verified Pratt primality
   certificates (`CompElliptic/Fields/Pasta.lean`);
 - a computable short-Weierstrass affine group law with correct-by-construction `SWCurve` /
-  `SWPoint` types, with closure, commutativity, and associativity fully proved — associativity by
-  transport to Mathlib's `WeierstrassCurve.Affine.Point` group (`CompElliptic/CurveForms/ShortWeierstrass.lean`);
-- Pallas as a concrete `SWCurve` instance, with `5` shown to be a quadratic non-residue (so the
-  curve has no point with `x = 0`) via Euler's criterion (`CompElliptic/Curves/Pasta.lean`).
+  `SWPoint` types — closure, commutativity, associativity, and the full `AddCommGroup (SWPoint E)`
+  instance (including scalar multiplication), with associativity by transport to Mathlib's
+  `WeierstrassCurve.Affine.Point` group (`CompElliptic/CurveForms/ShortWeierstrass.lean`);
+- Pallas and Vesta as concrete `SWCurve` instances (`CompElliptic/Curves/Pasta.lean`);
+- a curve-form-agnostic `CoordinateSystem` abstraction — a carrier with a validity predicate, an
+  equivalence on representatives, and computable operations — yielding a derived `AddCommGroup` on
+  the quotient, with affine as the `Rel = Eq` instance (`CompElliptic/CoordinateSystem.lean`);
+- an `Encoding` abstraction distinguishing `CanonicalEncoding` from `LenientEncoding` over a shared
+  `EncodingClass` interface, with encoded values ("depictions") tagged `Raw` / `Decodable` /
+  `Canonical`, the bijection `G ≃ Canonical e`, and the canonical-versus-decodable distinction
+  (`CompElliptic/Encoding.lean`).
 
 The library currently builds with no `sorry`; the proved theorems depend only on the standard
-`propext` / `Classical.choice` / `Quot.sound` axioms. Next steps (assembling the
-`AddCommGroup (SWPoint E)` instance, the Vesta instance, and further curve forms) are tracked in
-`TODO.md`.
+`propext` / `Classical.choice` / `Quot.sound` axioms. Further coordinate systems (projective and
+Jacobian), curve forms, the represented-group bridge, and the circuit model are tracked in `TODO.md`.
 
 ## License
 
