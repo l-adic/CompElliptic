@@ -187,6 +187,56 @@ The same token carries incompatible meanings across the most-used libraries:
 Because of this, CompElliptic avoids "Repr" for the coordinate-quotient layer, and — where it does
 use "representation" — pins the meaning (byte representation, internal representation, ...).
 
+### "Encoding": the scheme (map) versus the encoded value — caution
+
+A second overload bites inside CompElliptic's own `Encoding.lean`: "encoding" names both the *map*
+(the `CanonicalEncoding` bundle, and the `encode` / `decode` functions) and the *value* that map
+produces (an element of the value type `D` — "a valid result of encoding"). The surveyed libraries
+always separate the two, but they disagree on which role keeps the word:
+
+| Identifier / phrase | Library | "encoding" (or synonym) denotes |
+| --- | --- | --- |
+| `Encodable`, `encode` / `decode` | Mathlib | the **map / scheme** (the value is a bare `ℕ`, unnamed) |
+| `GroupEncoding` (trait) | zkcrypto `group` | the **scheme** |
+| `GroupEncoding::Repr` = *"the encoding of group elements"* | zkcrypto `group` | the **value** (a byte array) |
+| *"element encoding"* = *"the unique reversible encoding of a group element"* | RFC 9496 | the **value** |
+| `Encode` / `Decode` | RFC 9496 | the **map** |
+| `repr_𝔾` / `abst_𝔾`; *"the representation of P"* | Zcash spec §5.4.9 | map (`repr` / `abst`) versus value (*"representation"*) |
+| `CompressedEdwardsY`; `compress()` / `decompress()` | dalek | value (the wrapper type) versus map (the methods) |
+
+No convention dominates: Mathlib and the trait names use "encoding" / "encodable" for the scheme;
+zkcrypto's `Repr`, RFC 9496's "element encoding", and the spec's "representation" use it (or a
+synonym) for the value. What is universal is that the distinction is *drawn* — the two roles get
+*different* names (scheme: a trait or `Encodable`; value: `Repr` / "element encoding" / a
+`Compressed…` wrapper).
+
+**Recommendation for CompElliptic.** Give the two roles two words:
+
+- **"encoding" is the scheme** — the `CanonicalEncoding` bundle and the `encode` / `decode` maps ("a
+  canonical encoding of `G` into `D`"). This matches Mathlib's `Encodable` and incurs no rename. The
+  scheme is always *qualified* — `CanonicalEncoding` (the everyday type) or `LenientEncoding` (an
+  explicit sibling, for the rare consensus-enshrined lenient case) — with no bare `Encoding` type to
+  reach for, so the canonical-versus-lenient choice is always made deliberately (no weak default).
+- **"depiction" is the encoded value** — an element of `D`. The verb form is natural and
+  relational: `encode g` is "the (canonical) depiction of `g`", and "`r` is a depiction of `g`" iff
+  `decode r = some g`. The tagged types refine it: `Canonical e` and `Decodable e` are checked
+  depictions (members of `canonicalSet` / `decodableSet`), and `Raw e` is an unchecked one.
+
+"Depiction" is a deliberate coinage. No surveyed library uses it, so it carries no prior meaning —
+which is exactly the point: the natural synonym, "representation", is four-ways overloaded (preceding
+section) and "encoding" is the word we are trying to free. A reader must learn it once, but it is
+self-explanatory and reads well in the relational form that "codeword" and "encoded value" do not
+("codeword of `g`" is ungrammatical; "encoded value of `g`" is clunky). The coding-theory **codeword**
+(member of the **code**) remains a recognized synonym to mention in passing.
+
+Whichever value-noun is chosen, values should still be named by their **type** (`D`, `Raw e`,
+`Canonical e`, `Decodable e`) wherever a type can stand in, per the distinct-types principle.
+
+The runner-up is to flip the word entirely — "encoding = value" (following zkcrypto `Repr` and RFC
+9496) and rename the scheme `Codec` (an encode-plus-decode pair) or `EncodingScheme`. It reads
+naturally at value sites ("a valid encoding") but renames the central structure and diverges from
+`Encodable`.
+
 ## Implications for CompElliptic naming
 
 - The two orthogonal axes have stable names: **curve shape / form** (Weierstrass, Edwards,
@@ -199,6 +249,10 @@ use "representation" — pins the meaning (byte representation, internal represe
 - The **byte / bit** layer is "encoding" / "serialization"; the bundle of a group with its encoding
   is precisely the spec's **represented group** (§5.4.9), so that name is reserved for it and not for
   the coordinate quotient.
+- Within that layer, the two senses of "encoding" are split: **"encoding" is the scheme/map**
+  (`CanonicalEncoding`, `encode` / `decode`), and **"depiction" is the encoded value** (an element
+  of `D`; `encode g` is the canonical depiction of `g`). Not "representation" for the value (Repr
+  overload). See the caution above.
 - The **circuit** layer should follow halo2's `Point` / `NonIdentityPoint` (validated, on-curve,
   non-identity) over raw assigned cells, and arkworks' `Var` marker for "in-circuit value", so that
   the raw-cell-pair-versus-validated-point distinction — the locus of the NU6.2 anchoring bug — is a

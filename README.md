@@ -22,11 +22,8 @@ makes mistakes visible rather than silent:
    are).
 2. **Conversions between these types are always explicit** — no hidden coercions that silently cross
    abstraction levels; every conversion is a named function.
-3. **Terminology follows the Zcash Protocol Specification and common cryptographic usage** (which do
-   not conflict). For example, a *represented group* is — as in the
-   [Zcash Protocol Specification §5.4.9](https://zips.z.cash/protocol/protocol.pdf#concretepairing) —
-   a group together with its bit-sequence representation and abstraction functions (`repr_𝔾` maps to
-   a bit sequence; a byte encoding is a further step), not the bare coordinate quotient.
+3. **Terminology is consistent with the Zcash Protocol Specification and common cryptographic usage**
+   (which do not conflict) — see the [naming survey](design/naming-survey.md).
 4. **No class of mistake you can make in a cryptographic protocol is hidden by the API.** The type
    discipline exists to turn each potential error — treating a non-canonical encoding as canonical,
    getting an encoding's bit ordering (endianness) wrong, using raw coordinates as a group element
