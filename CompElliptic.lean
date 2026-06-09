@@ -6,6 +6,7 @@ Authors: Daira-Emma Hopwood
 -/
 import CompElliptic.Basic
 import CompElliptic.CoordinateSystem
+import CompElliptic.Encoding
 import CompElliptic.Fields.Pasta
 import CompElliptic.CurveForms.ShortWeierstrass
 import CompElliptic.Curves.Pasta
