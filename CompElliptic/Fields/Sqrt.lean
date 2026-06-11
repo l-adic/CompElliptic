@@ -11,10 +11,10 @@ import Mathlib.FieldTheory.Finite.Basic
 # Computable square roots in prime fields (Tonelli–Shanks)
 
 A *computable* square root for any odd-characteristic prime field, via the **general** Tonelli–Shanks
-algorithm, parameterised by the 2-adic factorisation `card-1 = 2^twoAdicity * oddPart` (`oddPart`
+algorithm, parameterized by the 2-adic factorization `card-1 = 2^twoAdicity * oddPart` (`oddPart`
 odd). This is the fully general case — `twoAdicity = 1` (i.e. `p ≡ 3 mod 4`) degenerates to the
-closed form `a^((p+1)/4)` with no loop iterations — not a variant specialised to `p ≡ 1 mod 16`. We
-are not optimising for speed or brevity, only for correctness and computability. It is a field-level
+closed form `a^((p+1)/4)` with no loop iterations — not a variant specialized to `p ≡ 1 mod 16`. We
+are not optimizing for speed or brevity, only for correctness and computability. It is a field-level
 primitive (it knows nothing about curves) and a candidate for upstreaming to CompPoly; it lives here
 for now so the Pasta point decoder (`abst`) can use it.
 
@@ -146,7 +146,7 @@ theorem leastPow2Order_spec {F : Type*} [Monoid F] [DecidableEq F] (b : F) (y : 
   · rw [hk, show 1+j-1 = j from by omega]; exact hbk1
 
 /-- Validity of Tonelli–Shanks data for `F`, as a predicate on the *bare components* (mirroring
-`IsCanonical` for encodings): the 2-adic factorisation `card - 1 = 2^twoAdicity * oddPart` holds
+`IsCanonical` for encodings): the 2-adic factorization `card - 1 = 2^twoAdicity * oddPart` holds
 with `oddPart` odd and `twoAdicity` positive, and `rootOfUnity` is a primitive `2^twoAdicity`-th
 root of unity. -/
 structure IsValidTonelliShanks {F : Type*} [Field F] [Fintype F]
@@ -165,7 +165,7 @@ structure IsValidTonelliShanks {F : Type*} [Field F] [Fintype F]
     haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
     refine orderOf_eq_prime_pow (p := 2) ?_ ?_ <;> native_decide
 
-/-- The data Tonelli–Shanks needs for a field `F`: the 2-adic factorisation
+/-- The data Tonelli–Shanks needs for a field `F`: the 2-adic factorization
 `card-1 = 2^twoAdicity * oddPart`, a primitive `2^twoAdicity`-th root of unity `rootOfUnity`
 (equivalently `g^oddPart` for any quadratic non-residue `g`), bundled with a proof of their
 validity (`IsValidTonelliShanks`). This ensures that a invalid instance cannot be constructed,
