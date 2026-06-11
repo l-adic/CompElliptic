@@ -59,9 +59,12 @@ Early work in progress. Present so far:
   `Canonical`, the bijection `G ≃ Canonical e`, and the canonical-versus-decodable distinction
   (`CompElliptic/Encoding.lean`).
 
-The library currently builds with no `sorry`; the proved theorems depend only on the standard
-`propext` / `Classical.choice` / `Quot.sound` axioms. Further coordinate systems (projective and
-Jacobian), curve forms, the represented-group bridge, and the circuit model are tracked in `TODO.md`.
+Uses of `sorry` are kept minimal and limited to work-in-progress. The library's general theorems
+depend only on the standard `propext` / `Classical.choice` / `Quot.sound` axioms; facts specific to
+concrete fields and curves also depend on `Lean.ofReduceBool`, the axiom behind `native_decide`
+(used for computational checks such as the ellipticity of the Pasta curves). Further coordinate
+systems (projective and Jacobian), curve forms, the represented-group bridge, and the circuit model
+are tracked in `TODO.md`.
 
 ## License
 

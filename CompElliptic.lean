@@ -8,5 +8,6 @@ import CompElliptic.Basic
 import CompElliptic.CoordinateSystem
 import CompElliptic.Encoding
 import CompElliptic.Fields.Pasta
+import CompElliptic.Fields.Sqrt
 import CompElliptic.CurveForms.ShortWeierstrass
 import CompElliptic.Curves.Pasta
