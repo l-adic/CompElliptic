@@ -142,13 +142,48 @@ types + transport) has been consolidated into these and removed.
 - [ ] Projective (and/or Jacobian) coordinate system with inversion-free complete formulas,
   transported to Mathlib's `Projective.Point` group, designated the canonical efficient group element
   (`Point`); explicit `toAffine` / `fromAffine` conversions. (Per the efficiency criterion.)
-- [ ] Represented group (spec §5.4.9): a group-element type bundled with `repr` / `abst` as a
-  canonical bijection. The serialization type is a *parameter*: support byte-oriented protocols
-  *directly* (no forced bit-sequence detour) as well as Zcash's bit-oriented
-  `repr_𝔾` → bits → `LEBS2OSP` → bytes. Distinct bit-sequence / byte-sequence types; explicit
-  endianness-bearing conversions named after the spec primitives (`LEBS2OSP` etc.) — bit ordering is
-  a mistake class (a Sapling testnet bug). Sapling's non-canonical-encoding acceptance goes in a
-  separate lenient `abst'` layer.
+  pasta_curves uses **Jacobian** (EFD `dbl-2009-l` doubling for `a = 0`). Scheduled after `repr` /
+  `abst`.
+- [x] Encoding abstraction (`Encoding.lean`): the `EncodingClass` interface plus `CanonicalEncoding`
+  and `LenientEncoding` (canonicity bundled in the everyday type, no weak default; lenient is the
+  explicit sibling). Encoded values are *depictions* — `Raw` / `Decodable` / `Canonical` — with the
+  two validity notions (decodable vs canonical) named explicitly rather than conflated under "valid",
+  the bijection `G ≃ Canonical e`, and their coincidence for canonical encodings. ("Encoding" = the
+  map, "depiction" = the encoded value; see `design/naming-survey.md`.) Lenient acceptance (the old
+  `abst'`) is just `LenientEncoding` — no `Canonical` requirement.
+- [ ] Concrete Pallas/Vesta point encodings, as **named `CanonicalEncoding` values**
+  `PallasEncoding` / `VestaEncoding` (so the tagged depiction types `Canonical PallasEncoding`,
+  `Decodable PallasEncoding`, `Raw PallasEncoding` etc. are distinct per curve). Primitives in
+  `CompElliptic/Encodings/Common.lean`; the Pasta encode map in `CompElliptic/Encodings/Pasta.lean`.
+  *(In progress: `I2LEOSP` / `LEOS2IP` / `encodedInt_lt` and `toBytes` are done and building; `abst`
+  and assembling the `CanonicalEncoding` value come next.)* Decisions:
+  - **Depiction type = exactly 32 bytes** (`Vector UInt8 32`), NOT a variable-length `List UInt8`.
+  - **Do NOT name the byte map `repr`.** Spec `reprP`/`reprV` are *bit*-sequence-valued (`𝔹^[ℓ]`);
+    the implementation (and ours) is *byte*-valued, so reusing `repr` would misrepresent the type. The
+    byte encode map is `toBytes` (≈ `LEBS2OSP ∘ repr` in spec terms, but modelled directly as bytes —
+    "repr is a bit of a fiction" since the impl uses bytes). It becomes `PallasEncoding.encode`.
+  - **Unified encode formula** (matches `pasta_curves` affine `GroupEncoding::to_bytes`):
+    `toBytes P = I2LEOSP 256 ⟨P.x.val + (P.y.val % 2) * 2^255, _⟩` — little-endian `x` (free top bit
+    since modulus `< 2^255`) with bit 255 = parity of `y`. `I2LEOSP ℓ` takes a *bit* length and a
+    `Fin (2^ℓ)` domain, producing `⌈ℓ/8⌉` bytes; the `< 2^256` witness is `encodedInt_lt` (needs
+    `Fact (n ≤ 2^255)`), and `toBytes` is generic over any `≤ 255`-bit `ZMod n`. The identity `(0,0)`
+    → 32 zero bytes falls out of the same formula (no special case); `x = 0 ⟹ 𝒪` relies on `5` being
+    a non-residue (`no_onCurve_x_zero`).
+  - `abst`/`decode` (next) needs a canonical range check on `x` (rejecting `≥ p`) and a computable
+    field square root — **done** in `CompElliptic/Fields/Sqrt.lean` (`TonelliShanks.sqrt?`, general
+    Tonelli–Shanks; soundness proved, completeness WIP). Reference for both directions:
+    `~/zecc/zcash-test-vectors` (`zcash_test_vectors/orchard/pallas.py`, `Point.from_bytes`), and
+    `pasta_curves` `curves.rs` affine `from_bytes`/`to_bytes`.
+  - Endianness-bearing bit/byte primitives (`I2LEOSP` / `LEOS2IP` done; `I2LEBSP` / `LEBS2OSP` per
+    spec `endian`) as distinct bit-/byte-sequence types — bit ordering is a mistake class (Sapling
+    testnet bug);
+    byte-oriented protocols served directly (no forced bit detour).
+  - Gotcha: `Valid` / `OnCurve` are plain `def`s, NOT auto-`Decidable`, so `native_decide` can't
+    synthesize the instance for the `Valid` disjunction. Construct on-curve test points with
+    `⟨x, y, Or.inl (by native_decide)⟩` (`OnCurve` alone IS decidable — cf. the `example`s in
+    `Curves/Pasta.lean`), not `by native_decide` on the whole `Valid`.
+  - Order: `toBytes`/encode → `abst`/decode (sqrt) → assemble `PallasEncoding`/`VestaEncoding`
+    `CanonicalEncoding` values → then Jacobian.
 - [ ] Pairings (will be needed eventually): a represented-pairing abstraction — a bilinear
   `e : G₁ × G₂ → G_T` (the spec's §5.4.9 also covers represented pairings) — and a pairing-friendly
   curve such as BLS12-381 (used by Sapling / Groth16). Mathlib has `WeierstrassCurve` pairing

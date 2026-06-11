@@ -7,6 +7,8 @@ Authors: Daira-Emma Hopwood
 import CompElliptic.Basic
 import CompElliptic.CoordinateSystem
 import CompElliptic.Encoding
+import CompElliptic.Encodings.Common
+import CompElliptic.Encodings.Pasta
 import CompElliptic.Fields.Pasta
 import CompElliptic.Fields.Sqrt
 import CompElliptic.CurveForms.ShortWeierstrass
