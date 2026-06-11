@@ -103,14 +103,18 @@ Early work in progress. Present so far:
 - an `Encoding` abstraction distinguishing `CanonicalEncoding` from `LenientEncoding` over a shared
   `EncodingClass` interface, with encoded values ("depictions") tagged `Raw` / `Decodable` /
   `Canonical`, the bijection `G ≃ Canonical e`, and the canonical-versus-decodable distinction
-  (`CompElliptic/Encoding.lean`).
+  (`CompElliptic/Encoding.lean`);
+- a computable Tonelli–Shanks square root for prime fields, soundness and completeness proved, with
+  `pallasBase` / `vestaBase` instances (`CompElliptic/Fields/Sqrt.lean`);
+- the compressed Pasta point encoding (`toBytes`) for Pallas and Vesta (`CompElliptic/Encodings/`).
 
 Uses of `sorry` are kept minimal and limited to work-in-progress. The library's general theorems
-depend only on the standard `propext` / `Classical.choice` / `Quot.sound` axioms; facts specific to
-concrete fields and curves also depend on `Lean.ofReduceBool`, the axiom behind `native_decide`
-(used for computational checks such as the ellipticity of the Pasta curves). Further coordinate
-systems (projective and Jacobian), curve forms, the represented-group bridge, and the circuit model
-are tracked in [TODO.md](TODO.md).
+depend only on the standard `propext` / `Classical.choice` / `Quot.sound` axioms. Facts specific to
+concrete fields and curves also depend on `Lean.ofReduceBool`, the axiom behind `native_decide`,
+now confined (per the *Independently re-checkable trust* principle) to checks the kernel cannot
+feasibly run, chiefly the order of the Tonelli–Shanks roots of unity. Further coordinate systems
+(projective and Jacobian), curve forms, the represented-group bridge, and the circuit model are
+tracked in [TODO.md](TODO.md).
 
 ## License
 
