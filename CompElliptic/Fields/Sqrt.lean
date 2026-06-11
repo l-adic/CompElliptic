@@ -5,6 +5,7 @@ as described in the files LICENSE-APACHE and LICENSE-MIT.
 Authors: Daira-Emma Hopwood
 -/
 import CompElliptic.Fields.Pasta
+import Mathlib.FieldTheory.Finite.Basic
 
 /-!
 # Computable square roots in prime fields (Tonelli–Shanks)
@@ -156,11 +157,21 @@ theorem sqrt?_mul_self {F : Type*} [Field F] [Fintype F] [DecidableEq F] (d : To
   simp only [mul_zero]
 
 /-- **Completeness** of `sqrt?` (scaffold): for a valid instance, every square decodes to `some`.
-Reduces to two facts — Euler's criterion (a nonzero square passes the residue test) and the loop
-invariant (the loop produces an actual root) — both still `sorry`. -/
+The remaining `sorry` is the loop invariant (the loop produces an actual root). -/
 theorem sqrt?_isSome_of_isSquare {F : Type*} [Field F] [Fintype F] [DecidableEq F]
     (d : TonelliShanks F) {a : F} (ha : IsSquare a) :
     ∃ r, d.sqrt? a = some r := by
+  -- The residue-test exponent `2^(S-1) * T` is `(card-1) / 2`, and the field has odd order.
+  have hodd : Fintype.card F % 2 = 1 := by
+    have h2 : 2 ∣ 2^d.twoAdicity * d.oddPart :=
+      (dvd_pow_self 2 d.valid.twoAdicity_pos.ne').mul_right d.oddPart
+    rw [d.valid.card_eq]; omega
+  have hchar : ringChar F ≠ 2 := fun h => by
+    have := FiniteField.even_card_of_char_two h; omega
+  have hexp : Fintype.card F / 2 = 2^(d.twoAdicity - 1) * d.oddPart := by
+    have hpow : 2^d.twoAdicity = 2 * 2^(d.twoAdicity - 1) := by
+      rw [← pow_succ', Nat.sub_add_cancel d.valid.twoAdicity_pos]
+    rw [d.valid.card_eq, hpow, mul_assoc]; omega
   simp only [sqrt?]
   split_ifs with h0 h1 hx
   · exact ⟨0, rfl⟩
@@ -168,7 +179,7 @@ theorem sqrt?_isSome_of_isSquare {F : Type*} [Field F] [Fintype F] [DecidableEq 
   · -- a ≠ 0, residue test passed, but `x*x ≠ a`: contradicted by the loop invariant.
     exact absurd (sorry : _ * _ = a) hx
   · -- a ≠ 0 and the residue test failed: contradicted by Euler's criterion for a square.
-    exact absurd (sorry : fpow a (2^(d.twoAdicity - 1) * d.oddPart) = 1) h1
+    exact absurd (by rw [fpow_spec, ← hexp]; exact (FiniteField.isSquare_iff hchar h0).mp ha) h1
 
 open CompElliptic.Fields.Pasta in
 /-- Tonelli–Shanks data for the Pallas base field `𝔽ₚ`: `p-1 = 2³² · T`, with `rootOfUnity = 5ᵀ`
