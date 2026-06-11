@@ -3,42 +3,88 @@
 Computable elliptic-curve abstractions for Lean 4, built in the style of (and on top of)
 [CompPoly](https://github.com/Verified-zkEVM/CompPoly).
 
-The aim is a *computable* development of finite fields and elliptic-curve group laws — across
-multiple curve forms and coordinate systems, with correct-by-construction types — suitable for
+The aim is a *computable* development of elliptic curves and eventually pairings —across
+multiple curve forms and coordinate systems, with correct-by-construction types— suitable for
 reasoning about elliptic-curve arithmetic in formally verified settings, such as zero-knowledge
 circuits. The first form is short Weierstrass over the Pasta (Pallas/Vesta) cycle.
 
 ## Design principles
 
-CompElliptic follows four named principles, chosen so that the type structure mirrors the
-cryptography and makes mistakes visible rather than silent. They are referred to by name (rather
-than number) throughout the codebase, so the references stay stable as the list evolves:
+CompElliptic follows a few named principles, chosen so that the type structure mirrors the
+cryptography, mistakes are visible rather than silent, and the trusted base stays small and
+auditable. They are referred to by name (rather than number) throughout the codebase, so the
+references stay stable as the list evolves:
 
-- **One type per abstraction level.** Each level has a single canonical Lean type, kept distinct: a
-  *group element* (the mathematical notion); the *internal representation* of a group element (a
-  quotient in general — valid coordinate representatives modulo an equivalence, which is equality
-  for affine forms and non-trivial for projective or Jacobian forms); the *byte-sequence*
-  representation; the *bit-sequence* representation; the *circuit* representation (there can be
-  several, but typically two field elements); and *coordinates* (field elements tagged with which
-  kind of coordinate they are).
-- **Explicit conversions.** Conversions between these types are always explicit — no hidden
-  coercions that silently cross abstraction levels; every conversion is a named function.
-- **Consistent terminology.** Terminology is consistent with the Zcash Protocol Specification and
-  common cryptographic usage (which do not conflict) — see the [naming survey](design/naming-survey.md).
-- **No hidden mistakes.** No class of mistake you can make in a cryptographic protocol is hidden by
-  the API. The type discipline exists to turn each potential error — treating a non-canonical
-  encoding as canonical, getting an encoding's bit ordering (endianness) wrong, using raw
-  coordinates as a group element without the on-curve check, or using circuit cells that are not
-  anchored to their intended source — into a visible, type-level obligation.
+### Separate types with explicit conversions
 
-A secondary criterion, ranked below these four and sometimes in tension with them: the type a
-specification writer reaches for as a *group element* should not be horribly inefficient for general
-computation. It may be *implemented* in a more efficient coordinate system (inversion-free projective
-or Jacobian, complete formulas) so long as it abstractly means "group element". So the canonical
-computable group element should be projective- or Jacobian-backed, not affine — affine addition needs
-a field inversion per operation, so the affine-backed scalar multiplication is the "horribly
-inefficient" case — while affine is a coordinate system for encoding and readability, reached by
-explicit conversion.
+Each abstraction level has its own Lean types, kept distinct:
+
+* *group elements* — the mathematical notion;
+* *internal representations* of group elements — valid coordinate representatives modulo
+  an equivalence;
+* *coordinates* — field elements tagged with which kind of coordinate they are;
+* *depictions* — rich encoded values tagged with their encoding and what has been checked
+  about them, to support local reasoning.
+
+Conversions between these types are always explicit. There are no hidden coercions that
+silently cross abstraction levels; every conversion is a named function. Each form bundles
+its validity conditions into the type, taking full advantage of Lean's dependent type
+system, so that illegal states are unrepresentable.
+
+### Give mistakes nowhere to hide
+
+No class of mistake you can make in a cryptographic protocol is hidden by the API. The type
+discipline exists to turn potential errors —treating a non-canonical encoding as canonical;
+getting an encoding's bit ordering wrong; using raw coordinates as a group element without
+the on-curve check; using circuit cells that are not anchored to their intended source; etc.—
+into a visible, type-level obligation.
+
+### Independently re-checkable trust
+
+Any reliance beyond the kernel and the standard axioms is confined to *concrete, closed facts*
+about specific fields and curves — each a falsifiable claim that any independent implementation
+could reproduce or refute. General theorems, which have no such spot-check, must only depend
+on this core of Lean's trusted base. See [trust discipline](#trust-discipline) below for more
+detail.
+
+### Consistent terminology
+
+Terminology is [carefully considered](design/naming-survey.md), and consistent with common
+cryptographic usage and with the Zcash Protocol Specification.
+
+### Efficiency without abstraction leaks
+
+Although the focus of the library is not on performance, the types a specification writer
+reaches for (especially for curve points / group elements) should not be horribly inefficient
+for general computation. But implementation choices (such as the use of projective/Jacobian
+coordinates) made to improve computational efficiency must not leak into CompElliptic's APIs.
+The available API should precisely reflect only what is intended to be modelled.
+
+## Trust discipline
+
+The *independently re-checkable trust* principle rests on a few specifics. The trust extensions
+that arise in practice in Lean are `native_decide` —which discharges a goal by running compiled
+native code and adds the `Lean.ofReduceBool` axiom— and, unavoidably for numbers of this size, the
+kernel's own GMP-backed bignum arithmetic, on which even ordinary `decide` depends.
+
+In CompElliptic, we allow these extensions to be used only for concrete, closed facts with no
+free variables: a Pratt primality certificate, a field's cardinality, the multiplicative order
+of a fixed root of unity, a (non-)residuosity check. These facts are easily reproducible: another
+computer-algebra system, proof assistant, bignum library, or hand computation would compute the
+same result, so a miscompiled or buggy oracle is caught by disagreement rather than silently
+believed.
+
+A general, quantified theorem ranging over many objects (for example, the correctness of a
+square-root algorithm for all finite fields it supports) has no analogous independent spot-check,
+so it must rest only on `propext` / `Classical.choice` / `Quot.sound`. Two corollaries guide the
+implementation:
+
+* prefer kernel `decide` to `native_decide` wherever the computation is feasible for the kernel,
+  since that removes the compiler and any `@[extern]` / `@[implemented_by]` overrides (although
+  not GMP) from the trusted base;
+* state each computational fact in a form an independent tool could re-verify.
+
+The *Status* section below records how this split appears in the actual axiom dependencies.
 
 ## Status
 
@@ -64,7 +110,7 @@ depend only on the standard `propext` / `Classical.choice` / `Quot.sound` axioms
 concrete fields and curves also depend on `Lean.ofReduceBool`, the axiom behind `native_decide`
 (used for computational checks such as the ellipticity of the Pasta curves). Further coordinate
 systems (projective and Jacobian), curve forms, the represented-group bridge, and the circuit model
-are tracked in `TODO.md`.
+are tracked in [TODO.md](TODO.md).
 
 ## License
 

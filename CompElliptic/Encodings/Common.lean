@@ -13,28 +13,29 @@ import Mathlib.Data.ZMod.Basic
 
 The Zcash Protocol Specification's integer / bit-sequence / octet-string conversion primitives,
 shared by the concrete point and field encodings in `CompElliptic/Encodings/`. Following the
-*One type per abstraction level* and *No hidden mistakes* principles: bit- and byte-sequence
-depictions are distinct fixed-length types with their lengths in the types (so truncation / padding
-errors are caught), and the endianness is carried *in the name* of each primitive, never a silent
-default.
+*Separate types with explicit conversions* and *Give mistakes nowhere to hide* principles: bit-
+and byte-sequence depictions are distinct fixed-length types with their lengths in the types
+(so truncation / padding errors are caught), and the endianness is carried *in the name* of each
+primitive, never a silent default.
 
 Every primitive in this family takes a *bit* length (never a byte length), so there is no
 bit-vs-byte ambiguity to remember at a call site; an octet primitive like `I2LEOSP` produces
 `⌈ℓ/8⌉` bytes from a bit length `ℓ`.
 
 So far: `I2LEOSP` (integer → little-endian octet string). The little-endian bit-sequence
-conversions (`I2LEBSP`, `LEBS2IP`) and the bit↔byte bridges (`LEBS2OSP`, `LEOS2BSP`) will join it
-here as the decode direction (`abst`) is built out.
+conversions (`I2LEBSP`, `LEBS2IP`) and the bit↔byte bridges (`LEBS2OSP`, `LEOS2BSP`) will join
+it here as the decode direction (`abst`) is built out.
 -/
 
 namespace CompElliptic
 
 /-- `I2LEOSP ℓ n`: the little-endian octet (byte) encoding of the integer `n`, as `⌈ℓ/8⌉ = (ℓ+7)/8`
-bytes, least-significant byte first (Zcash spec, "Integers, Bit Sequences, and Endianness"). Byte
-`i` is `⌊n / 256^i⌋ mod 256`.
+bytes, least-significant byte first (Zcash spec, "Integers, Bit Sequences, and Endianness").
+Byte `i` is `⌊n / 256^i⌋ mod 256`.
 
-`ℓ` is a *bit* length (uniform with the rest of the family), and the domain `Fin (2^ℓ)` makes `n`
-in range by construction, so there is no silent high-byte truncation (*No hidden mistakes*). -/
+`ℓ` is a *bit* length (uniform with the rest of the family), and the domain `Fin (2^ℓ)` ensures
+that `n` is in range by construction, so that there can be no silent high-byte truncation
+(*Give mistakes nowhere to hide*). -/
 def I2LEOSP (ℓ : ℕ) (n : Fin (2^ℓ)) : Vector UInt8 ((ℓ + 7) / 8) :=
   Vector.ofFn (fun i : Fin ((ℓ + 7) / 8) => UInt8.ofNat (n.val / 256^(i : ℕ) % 256))
 

@@ -5,37 +5,8 @@ verification that motivates it (CompElliptic itself is a general-purpose computa
 Entries are brief; design context lives in the module doc-comments and in the Claude project
 memory `project_orchard_ecc_lean_verification`.
 
-## Design principles (foundational)
-
-These are fixed; see also `README.md`.
-
-1. **One Lean type per abstraction level**, kept distinct: *group element* (the mathematical
-   notion); *internal representation* of a group element (a quotient in general — valid coordinate
-   representatives modulo an equivalence: equality for affine forms, non-trivial for projective /
-   Jacobian); *byte-sequence* representation; *bit-sequence* representation; *circuit* representation
-   (can be several, typically two field elements); and *coordinates* (field elements tagged with
-   which kind of coordinate they are).
-2. **Conversions between these types are always explicit** — no hidden coercions across abstraction
-   levels.
-3. **Terminology follows the Zcash Protocol Specification and common cryptographic usage** (which do
-   not conflict). In particular the
-   [Zcash Protocol Specification §5.4.9](https://zips.z.cash/protocol/protocol.pdf#concretepairing)
-   "represented group" = a group bundled with its `repr` / `abst` encoding (`repr_𝔾` maps to a
-   bit sequence; a byte encoding is a further step), so that name is reserved for the encoding bundle,
-   not the coordinate quotient (which is the "internal representation" layer).
-4. **No class of mistake you can make in a cryptographic protocol is hidden by the API** — the type
-   discipline turns each potential error (non-canonical encoding treated as canonical, raw
-   coordinates used as a group element without the on-curve check, circuit cells not anchored to
-   their source, ...) into a visible, type-level obligation. Keep historical warts (e.g. Sapling's
-   non-canonical-encoding acceptance) out of the core abstractions, as separate lenient layers.
-
-Secondary criterion (ranked below the four above; may be in tension): the type a spec writer reaches
-for as a *group element* should not be horribly inefficient for general computation. It may be
-*implemented* in a more efficient coordinate system (inversion-free projective / Jacobian, complete
-formulas) so long as it abstractly means "group element". So the canonical computable group element
-should be projective/Jacobian-backed, not affine (affine `add` needs a field inversion per op, so the
-affine-backed `smul` is the "horribly inefficient" case); affine is a coordinate system for encoding
-/ readability, reached by explicit conversion.
+The [design principles](README.md#design-principles) followed by this library are described in
+[README.md](README.md).
 
 ## Design decisions (settled)
 

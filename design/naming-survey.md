@@ -256,7 +256,7 @@ naturally at value sites ("a valid encoding") but renames the central structure 
 - The **circuit** layer should follow halo2's `Point` / `NonIdentityPoint` (validated, on-curve,
   non-identity) over raw assigned cells, and arkworks' `Var` marker for "in-circuit value", so that
   the raw-cell-pair-versus-validated-point distinction — the locus of the NU6.2 anchoring bug — is a
-  type-level distinction (the *No hidden mistakes* principle).
+  type-level distinction (the *Give mistakes nowhere to hide* principle).
 
 ## Sources
 
