@@ -24,7 +24,7 @@ wrong root. *Soundness* (`sqrt?_mul_self`: anything it returns squares to `a`) f
 from this. *Completeness* (`sqrt?_isSome_of_isSquare`: a genuine square yields `some`) holds for a
 valid instance, via Euler's criterion for the residue test and the loop invariant `loop_sound`.
 
-The default `Monoid.npow` (`a^n`) is linear in `n`, so it cannot evaluate the `≈ 2²⁵³`-sized
+The default `Monoid.npow` (`a^n`) is linear in `n`, so it cannot evaluate the `≈ 2^253`-sized
 exponents here. `fpow` is square-and-multiply (logarithmic), fast enough to `#eval`.
 
 ## References
@@ -306,7 +306,7 @@ theorem sqrt?_isSome_of_isSquare {F : Type*} [Field F] [Fintype F] [DecidableEq 
     exact absurd (by rw [fpow_spec, ← hexp]; exact (FiniteField.isSquare_iff hchar h0).mp ha) h1
 
 open CompElliptic.Fields.Pasta in
-/-- Tonelli–Shanks data for the Pallas base field `𝔽ₚ`: `p-1 = 2³² · T`, with `rootOfUnity = 5ᵀ`
+/-- Tonelli–Shanks data for the Pallas base field `𝔽ₚ`: `p-1 = 2^32 · T`, with `rootOfUnity = 5ᵀ`
 (`pallas.py`). -/
 def pallasBase : TonelliShanks PallasBaseField where
   twoAdicity := 32
