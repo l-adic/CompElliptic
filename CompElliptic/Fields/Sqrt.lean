@@ -313,7 +313,7 @@ def pallasBase : TonelliShanks PallasBaseField where
   oddPart := 0x40000000000000000000000000000000224698fc094cf91b992d30ed
   rootOfUnity := 0x2bce74deac30ebda362120830561f81aea322bf2b7bb7584bdad6fabd87ea32f
   valid := {
-    card_eq := by rw [ZMod.card]; native_decide
+    card_eq := by rw [ZMod.card]; decide
     oddPart_odd := by decide
     twoAdicity_pos := by decide
     rootOfUnity_order := by

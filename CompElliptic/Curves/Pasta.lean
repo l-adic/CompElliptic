@@ -41,7 +41,7 @@ theorem b_ne_zero : b ≠ 0 := by decide
 def curve : SWCurve PallasBaseField where
   A := a
   B := b
-  IsElliptic := by rw [isUnit_iff_ne_zero]; native_decide
+  IsElliptic := by rw [isUnit_iff_ne_zero]; decide
   B_nonzero := b_ne_zero
 
 /-- The `(0, 0)` sentinel is off the Pallas curve. -/
@@ -105,7 +105,7 @@ theorem b_ne_zero : b ≠ 0 := by decide
 def curve : SWCurve VestaBaseField where
   A := a
   B := b
-  IsElliptic := by rw [isUnit_iff_ne_zero]; native_decide
+  IsElliptic := by rw [isUnit_iff_ne_zero]; decide
   B_nonzero := b_ne_zero
 
 /-- The `(0, 0)` sentinel is off the Vesta curve. -/

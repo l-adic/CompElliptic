@@ -40,17 +40,17 @@ def toBytes {n : ℕ} [Fact (Nat.Prime n)] [Fact (n ≤ 2^255)]
 
 /-- The Pallas base field modulus fits in 255 bits (it is `≈ 2^254`), so the compressed encoding has
 a free top bit for the `y`-parity. -/
-instance : Fact (PALLAS_BASE_CARD ≤ 2^255) := ⟨by native_decide⟩
+instance : Fact (PALLAS_BASE_CARD ≤ 2^255) := ⟨by decide⟩
 
 /-- Likewise the Pallas scalar field (= Vesta base field) modulus. -/
-instance : Fact (PALLAS_SCALAR_CARD ≤ 2^255) := ⟨by native_decide⟩
+instance : Fact (PALLAS_SCALAR_CARD ≤ 2^255) := ⟨by decide⟩
 
 namespace Curves.Pasta.Pallas
 
 /-- The test point `G = (-1, 2)` as an on-curve `SWPoint`, for exercising `toBytes`.
 (`Valid` is `OnCurve ∨ · = (0, 0)`; only the `OnCurve` disjunct is `Decidable`, so we supply
-`Or.inl (by native_decide)` rather than deciding `Valid` directly.) -/
-def G_point : SWPoint curve := ⟨-1, 2, Or.inl (by native_decide)⟩
+`Or.inl (by decide)` rather than deciding `Valid` directly.) -/
+def G_point : SWPoint curve := ⟨-1, 2, Or.inl (by decide)⟩
 
 #eval (toBytes G_point).toList
 
