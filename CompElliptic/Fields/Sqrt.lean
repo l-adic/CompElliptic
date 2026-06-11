@@ -151,14 +151,19 @@ with `oddPart` odd and `twoAdicity` positive, and `rootOfUnity` is a primitive `
 root of unity. -/
 structure IsValidTonelliShanks {F : Type*} [Field F] [Fintype F]
     (twoAdicity oddPart : ℕ) (rootOfUnity : F) : Prop where
-  /-- `card - 1 = 2^twoAdicity * oddPart`. -/
-  card_eq : Fintype.card F = 2^twoAdicity * oddPart + 1
+  /-- `card - 1 = 2^twoAdicity * oddPart`. The default discharges it for a `ZMod`-backed field with
+  literal parameters; an exotic field can supply its own proof. -/
+  card_eq : Fintype.card F = 2^twoAdicity * oddPart + 1 := by rw [ZMod.card]; decide
   /-- The odd part is odd. -/
-  oddPart_odd : Odd oddPart
+  oddPart_odd : Odd oddPart := by decide
   /-- There is at least one factor of two (the field is not of characteristic 2). -/
-  twoAdicity_pos : 0 < twoAdicity
-  /-- `rootOfUnity` has multiplicative order exactly `2^twoAdicity`. -/
-  rootOfUnity_order : orderOf rootOfUnity = 2^twoAdicity
+  twoAdicity_pos : 0 < twoAdicity := by decide
+  /-- `rootOfUnity` has multiplicative order exactly `2^twoAdicity`. The order is checked via a
+  primitivity certificate (`rootOfUnity^(2^(S-1)) ≠ 1 = rootOfUnity^(2^S)`); the exponentiation has
+  a field-sized base, so this leg uses `native_decide`. -/
+  rootOfUnity_order : orderOf rootOfUnity = 2^twoAdicity := by
+    haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+    refine orderOf_eq_prime_pow (p := 2) ?_ ?_ <;> native_decide
 
 /-- The data Tonelli–Shanks needs for a field `F`: the 2-adic factorisation
 `card-1 = 2^twoAdicity * oddPart`, a primitive `2^twoAdicity`-th root of unity `rootOfUnity`
@@ -172,8 +177,9 @@ structure TonelliShanks (F : Type*) [Field F] [Fintype F] where
   oddPart : ℕ
   /-- A primitive `2^twoAdicity`-th root of unity (`g^oddPart` for a non-residue `g`). -/
   rootOfUnity : F
-  /-- The data is valid for `F`. -/
-  valid : IsValidTonelliShanks twoAdicity oddPart rootOfUnity
+  /-- The data is valid for `F`. Defaults to the `IsValidTonelliShanks` field defaults, so an
+  instance over a `ZMod`-backed field with literal parameters needs only the three data fields. -/
+  valid : IsValidTonelliShanks twoAdicity oddPart rootOfUnity := by exact {}
 
 namespace TonelliShanks
 
@@ -312,14 +318,6 @@ def pallasBase : TonelliShanks PallasBaseField where
   twoAdicity := 32
   oddPart := 0x40000000000000000000000000000000224698fc094cf91b992d30ed
   rootOfUnity := 0x2bce74deac30ebda362120830561f81aea322bf2b7bb7584bdad6fabd87ea32f
-  valid := {
-    card_eq := by rw [ZMod.card]; decide
-    oddPart_odd := by decide
-    twoAdicity_pos := by decide
-    rootOfUnity_order := by
-      haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
-      exact orderOf_eq_prime_pow (p := 2) (n := 31) (by native_decide) (by native_decide)
-  }
 
 -- `√4 = ±2` (a square); `√5 = none` (5 is a non-residue, cf. `Pallas.five_not_isSquare`).
 #eval (pallasBase.sqrt? 4).map (·.val)
@@ -334,14 +332,6 @@ def vestaBase : TonelliShanks VestaBaseField where
   twoAdicity := 32
   oddPart := 0x40000000000000000000000000000000224698fc0994a8dd8c46eb21
   rootOfUnity := 0x2de6a9b8746d3f589e5c4dfd492ae26e9bb97ea3c106f049a70e2c1102b6d05f
-  valid := {
-    card_eq := by rw [ZMod.card]; decide
-    oddPart_odd := by decide
-    twoAdicity_pos := by decide
-    rootOfUnity_order := by
-      haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
-      exact orderOf_eq_prime_pow (p := 2) (n := 31) (by native_decide) (by native_decide)
-  }
 
 -- `√4 = ±2` (a square); `√5 = none` (5 is a non-residue, cf. `Vesta.five_not_isSquare`).
 #eval (vestaBase.sqrt? 4).map (·.val)
