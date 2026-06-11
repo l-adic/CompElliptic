@@ -86,6 +86,40 @@ where
     | 0 => k
     | fuel + 1 => if b2k = 1 then k else go (k+1) (b2k*b2k) fuel
 
+/-- Spec of the `go` accumulator: when some `2^j`-th power of `b2k` (with `j ≤ fuel`) is `1`,
+`go k b2k fuel = k + j₀` where `j₀` is the *least* such exponent. -/
+theorem leastPow2Order.go_spec {F : Type*} [Monoid F] [DecidableEq F] :
+    ∀ (fuel k : ℕ) (b2k : F), (∃ j ≤ fuel, b2k ^ 2^j = 1) →
+      ∃ j ≤ fuel, leastPow2Order.go k b2k fuel = k + j ∧ b2k ^ 2^j = 1 ∧
+        ∀ i < j, b2k ^ 2^i ≠ 1 := by
+  intro fuel
+  induction fuel with
+  | zero =>
+    intro k b2k hex
+    obtain ⟨j, hj, hbj⟩ := hex
+    obtain rfl : j = 0 := Nat.le_zero.mp hj
+    exact ⟨0, le_refl 0, rfl, hbj, fun i hi => absurd hi (Nat.not_lt_zero i)⟩
+  | succ fuel ih =>
+    intro k b2k hex
+    obtain ⟨j, hj, hbj⟩ := hex
+    have hconv : ∀ m : ℕ, (b2k * b2k) ^ 2^m = b2k ^ 2^(m+1) := fun m => by
+      rw [← pow_two, ← pow_mul, ← pow_succ']
+    by_cases hb1 : b2k = 1
+    · exact ⟨0, Nat.zero_le _, by simp [leastPow2Order.go, hb1], by simpa using hb1,
+        fun i hi => absurd hi (Nat.not_lt_zero i)⟩
+    · have hex' : ∃ j' ≤ fuel, (b2k * b2k) ^ 2^j' = 1 := by
+        obtain _ | j := j
+        · exact absurd (by simpa using hbj) hb1
+        · exact ⟨j, by omega, by rw [hconv]; exact hbj⟩
+      obtain ⟨j'', hj'', hgo, hbj'', hmin⟩ := ih (k+1) (b2k * b2k) hex'
+      refine ⟨j'' + 1, by omega, ?_, ?_, ?_⟩
+      · rw [leastPow2Order.go, if_neg hb1, hgo]; omega
+      · rw [← hconv]; exact hbj''
+      · intro i hi
+        obtain _ | i := i
+        · simpa using hb1
+        · rw [← hconv]; exact hmin i (by omega)
+
 /-- Validity of Tonelli–Shanks data for `F`, as a predicate on the *bare components* (mirroring
 `IsCanonical` for encodings): the 2-adic factorisation `card - 1 = 2^twoAdicity * oddPart` holds
 with `oddPart` odd and `twoAdicity` positive, and `rootOfUnity` is a primitive `2^twoAdicity`-th
