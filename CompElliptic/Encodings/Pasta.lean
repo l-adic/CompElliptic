@@ -56,4 +56,14 @@ def G_point : SWPoint curve := ⟨-1, 2, Or.inl (by decide)⟩
 
 end Curves.Pasta.Pallas
 
+namespace Curves.Pasta.Vesta
+
+/-- The test point `G = (-1, 2)` on the Vesta curve as an on-curve `SWPoint`, for exercising
+`toBytes` over the Vesta base field (`= PallasScalarField`). -/
+def G_point : SWPoint curve := ⟨-1, 2, Or.inl (by decide)⟩
+
+#eval (toBytes G_point).toList
+
+end Curves.Pasta.Vesta
+
 end CompElliptic

@@ -327,6 +327,28 @@ def pallasBase : TonelliShanks PallasBaseField where
 -- `√((-1)³ + 5) = √4`: the `y` of the test point `G = (-1, 2)`.
 #eval (pallasBase.sqrt? ((-1 : Fields.Pasta.PallasBaseField)^3 + 5)).map (·.val)
 
+open CompElliptic.Fields.Pasta in
+/-- Tonelli–Shanks data for the Vesta base field `𝔽_q` (`= PallasScalarField`): `q-1 = 2^32 · T`,
+with `rootOfUnity = 5ᵀ` (`vesta.py`). -/
+def vestaBase : TonelliShanks VestaBaseField where
+  twoAdicity := 32
+  oddPart := 0x40000000000000000000000000000000224698fc0994a8dd8c46eb21
+  rootOfUnity := 0x2de6a9b8746d3f589e5c4dfd492ae26e9bb97ea3c106f049a70e2c1102b6d05f
+  valid := {
+    card_eq := by rw [ZMod.card]; decide
+    oddPart_odd := by decide
+    twoAdicity_pos := by decide
+    rootOfUnity_order := by
+      haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+      exact orderOf_eq_prime_pow (p := 2) (n := 31) (by native_decide) (by native_decide)
+  }
+
+-- `√4 = ±2` (a square); `√5 = none` (5 is a non-residue, cf. `Vesta.five_not_isSquare`).
+#eval (vestaBase.sqrt? 4).map (·.val)
+#eval vestaBase.sqrt? 5
+-- `√((-1)³ + 5) = √4`: the `y` of the test point `G = (-1, 2)`.
+#eval (vestaBase.sqrt? ((-1 : Fields.Pasta.VestaBaseField)^3 + 5)).map (·.val)
+
 end TonelliShanks
 
 end CompElliptic.Fields
