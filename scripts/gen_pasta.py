@@ -57,11 +57,11 @@ def pallasBase : TonelliShanks PallasBaseField where
   oddPart := 0x40000000000000000000000000000000224698fc094cf91b992d30ed
   rootOfUnity := 0x2bce74deac30ebda362120830561f81aea322bf2b7bb7584bdad6fabd87ea32f
 
--- `√4 = ±2` (a square); `√5 = none` (5 is a non-residue, cf. `Pallas.five_not_isSquare`).
-#eval (pallasBase.sqrt? 4).map (·.val)
-#eval pallasBase.sqrt? 5
+-- `√4` squares back to `4`; `√5 = none` (5 is a non-residue, cf. `Pallas.five_not_isSquare`).
+example : (pallasBase.sqrt? 4).map (· ^ 2) = some 4 := by native_decide
+example : pallasBase.sqrt? 5 = none := by native_decide
 -- `√((-1)³ + 5) = √4`: the `y` of the test point `G = (-1, 2)`.
-#eval (pallasBase.sqrt? ((-1 : PallasBaseField)^3 + 5)).map (·.val)
+example : (pallasBase.sqrt? ((-1 : PallasBaseField)^3 + 5)).map (· ^ 2) = some 4 := by native_decide
 
 /-- Tonelli–Shanks data for the Vesta base field `𝔽_q` (`= PallasScalarField`): `q-1 = 2^32 · T`,
 with `rootOfUnity = 5ᵀ` (`vesta.py`). -/
@@ -70,11 +70,11 @@ def vestaBase : TonelliShanks VestaBaseField where
   oddPart := 0x40000000000000000000000000000000224698fc0994a8dd8c46eb21
   rootOfUnity := 0x2de6a9b8746d3f589e5c4dfd492ae26e9bb97ea3c106f049a70e2c1102b6d05f
 
--- `√4 = ±2` (a square); `√5 = none` (5 is a non-residue, cf. `Vesta.five_not_isSquare`).
-#eval (vestaBase.sqrt? 4).map (·.val)
-#eval vestaBase.sqrt? 5
+-- `√4` squares back to `4`; `√5 = none` (5 is a non-residue, cf. `Vesta.five_not_isSquare`).
+example : (vestaBase.sqrt? 4).map (· ^ 2) = some 4 := by native_decide
+example : vestaBase.sqrt? 5 = none := by native_decide
 -- `√((-1)³ + 5) = √4`: the `y` of the test point `G = (-1, 2)`.
-#eval (vestaBase.sqrt? ((-1 : VestaBaseField)^3 + 5)).map (·.val)
+example : (vestaBase.sqrt? ((-1 : VestaBaseField)^3 + 5)).map (· ^ 2) = some 4 := by native_decide
 
 end CompElliptic.Fields.Pasta
 """
