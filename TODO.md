@@ -191,6 +191,10 @@ types + transport) has been consolidated into these and removed.
 
 ## Tooling and conventions
 
+- [ ] Add CI for CompElliptic (none exists yet): build the Lean library, and check that the
+  field-file generators reproduce their committed outputs unchanged — run `scripts/gen_pasta.py` /
+  `scripts/gen_jubjub.py` and `git diff --exit-code` the regenerated `Fields/*.lean`, so a hand-edit
+  can no longer silently drift from its generator (as `Fields/Pasta.lean` had).
 - [ ] Script (under `scripts/`) to check, and update in place, the copyright/licence header on
   every source file (`*.lean`, `*.py`): verify each file starts with the canonical dual-licence
   header (Apache 2.0 or MIT, `LICENSE-APACHE` / `LICENSE-MIT`, `Authors:` line) in the right comment
