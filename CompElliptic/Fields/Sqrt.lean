@@ -4,7 +4,6 @@ Released under the Apache License, Version 2.0, or the MIT license, at your opti
 as described in the files LICENSE-APACHE and LICENSE-MIT.
 Authors: Daira-Emma Hopwood
 -/
-import CompElliptic.Fields.Pasta
 import Mathlib.FieldTheory.Finite.Basic
 
 /-!
@@ -310,34 +309,6 @@ theorem sqrt?_isSome_of_isSquare {F : Type*} [Field F] [Fintype F] [DecidableEq 
       rw [fpow_spec, ← pow_mul, Nat.mul_comm d.oddPart, ← fpow_spec]; exact h1
   · -- a ≠ 0 and the residue test failed: contradicted by Euler's criterion for a square.
     exact absurd (by rw [fpow_spec, ← hexp]; exact (FiniteField.isSquare_iff hchar h0).mp ha) h1
-
-open CompElliptic.Fields.Pasta in
-/-- Tonelli–Shanks data for the Pallas base field `𝔽ₚ`: `p-1 = 2^32 · T`, with `rootOfUnity = 5ᵀ`
-(`pallas.py`). -/
-def pallasBase : TonelliShanks PallasBaseField where
-  twoAdicity := 32
-  oddPart := 0x40000000000000000000000000000000224698fc094cf91b992d30ed
-  rootOfUnity := 0x2bce74deac30ebda362120830561f81aea322bf2b7bb7584bdad6fabd87ea32f
-
--- `√4 = ±2` (a square); `√5 = none` (5 is a non-residue, cf. `Pallas.five_not_isSquare`).
-#eval (pallasBase.sqrt? 4).map (·.val)
-#eval pallasBase.sqrt? 5
--- `√((-1)³ + 5) = √4`: the `y` of the test point `G = (-1, 2)`.
-#eval (pallasBase.sqrt? ((-1 : Fields.Pasta.PallasBaseField)^3 + 5)).map (·.val)
-
-open CompElliptic.Fields.Pasta in
-/-- Tonelli–Shanks data for the Vesta base field `𝔽_q` (`= PallasScalarField`): `q-1 = 2^32 · T`,
-with `rootOfUnity = 5ᵀ` (`vesta.py`). -/
-def vestaBase : TonelliShanks VestaBaseField where
-  twoAdicity := 32
-  oddPart := 0x40000000000000000000000000000000224698fc0994a8dd8c46eb21
-  rootOfUnity := 0x2de6a9b8746d3f589e5c4dfd492ae26e9bb97ea3c106f049a70e2c1102b6d05f
-
--- `√4 = ±2` (a square); `√5 = none` (5 is a non-residue, cf. `Vesta.five_not_isSquare`).
-#eval (vestaBase.sqrt? 4).map (·.val)
-#eval vestaBase.sqrt? 5
--- `√((-1)³ + 5) = √4`: the `y` of the test point `G = (-1, 2)`.
-#eval (vestaBase.sqrt? ((-1 : Fields.Pasta.VestaBaseField)^3 + 5)).map (·.val)
 
 end TonelliShanks
 

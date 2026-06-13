@@ -59,9 +59,11 @@ The [design principles](README.md#design-principles) followed by this library ar
 - [x] Computable square roots (`Fields/Sqrt.lean`): the general Tonelli–Shanks algorithm
   (`TonelliShanks.sqrt?`), self-validating, with **soundness and completeness both proved** (the loop
   invariant `loop_sound`, no `sorry`). `IsValidTonelliShanks` bundles the validity (2-adic
-  factorization, odd part, primitive `2^S`-th root of unity) with field defaults, so the `pallasBase`
-  / `vestaBase` instances need only their data. A field-level primitive (knows nothing about curves),
-  candidate for upstreaming to CompPoly.
+  factorization, odd part, primitive `2^S`-th root of unity) with field defaults, so a per-field
+  `TonelliShanks` instance needs only its three data fields. Those instances live in each field's own
+  file (`pallasBase` / `vestaBase` in `Fields/Pasta.lean`) — each field carries its own sqrt — while
+  `Sqrt.lean` stays field-agnostic. A field-level primitive (knows nothing about curves), candidate
+  for upstreaming to CompPoly.
   - [ ] Remove the last `native_decide` from the validity (`rootOfUnity_order`). Plain `decide` is
     infeasible (a 256-bit-base field exponentiation), and `reduce_mod_char` only does modexp for a
     *small* base. But `rootOfUnity = 5^T`, so rewrite the two order obligations as small-base-5
