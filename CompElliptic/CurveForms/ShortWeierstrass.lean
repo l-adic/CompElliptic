@@ -21,6 +21,11 @@ One module for the short-Weierstrass curve form `y² = x³ + A x + B`, layered:
 3. **Rich bundled types** — `SWCurve` (bundles ellipticity and `B ≠ 0`) and `SWPoint E`
    (correct-by-construction: on the curve or `𝒪`). This is the correct-by-construction interface
    used to express the group structure and circuit gadgets.
+4. **Fast scalar multiplication** — the group action `n • _` on `SWPoint E` is the generic binary
+   double-and-add `CompElliptic.binNsmul` (`ScalarMul.lean`), so `n • P` computes in `O(log n)` and
+   is `native_decide`-friendly for cryptographic-size scalars, while remaining the genuine scalar
+   action (every Mathlib `n • _` lemma still applies, since they follow from `nsmul_zero` /
+   `nsmul_succ`).
 
 The field assumption is a generic `[Field F]`: `SWCurve.IsElliptic` excludes characteristic 2
 (`sw_Δ = 0` there), so binary fields are gracefully excluded, but without precluding any future
@@ -398,14 +403,34 @@ instance (E : SWCurve F) : Zero (SWPoint E) := ⟨SWPoint.zero E⟩
 instance (E : SWCurve F) : Add (SWPoint E) := ⟨sw_add⟩
 instance (E : SWCurve F) : Neg (SWPoint E) := ⟨sw_neg⟩
 
+/-! ### Fast (logarithmic) scalar multiplication
+
+The spec-level `smul` is linear (`n` additions), so it cannot be evaluated by `decide` or
+`native_decide` for cryptographic-size scalars (`≈ 2^254`). The group action `n • _` on `SWPoint E`
+(the `nsmul` field of the `AddCommGroup` instance below) is instead the generic binary
+double-and-add `CompElliptic.binNsmul` over the raw `sw_add` / `SWPoint.zero`. So `n • P` computes in
+`O(log n)` and is `native_decide`-friendly, while remaining the genuine scalar action: every Mathlib
+`n • _` lemma still applies, since they follow from `nsmul_zero` and `nsmul_succ`. -/
+
+/-- `SWPoint E` has decidable equality (the `onCurve` field is a `Prop`, so equality reduces to the
+coordinate pair); needed for `native_decide` on `n • P = Q`. -/
+instance instDecidableEqSWPoint {E : SWCurve F} : DecidableEq (SWPoint E) := fun P Q =>
+  decidable_of_iff ((P.x, P.y) = (Q.x, Q.y)) ⟨SWPoint.ext_pair, fun h => by rw [h]⟩
+
 /-- The abelian group of representable points on `E`: identity laws and inverses are immediate;
-commutativity and associativity transport from the raw `add` lemmas, whose hypotheses `E`'s bundled
-fields (`IsElliptic`, `B_nonzero`) discharge. -/
+commutativity and associativity transport from the raw `add` lemmas, whose hypotheses are discharged
+by `E`'s bundled fields (`IsElliptic` and `B_nonzero`). -/
 instance (E : SWCurve F) : AddCommGroup (SWPoint E) where
   add := sw_add
   zero := SWPoint.zero E
   neg := sw_neg
-  nsmul := nsmulRec
+  nsmul := binNsmul sw_add (SWPoint.zero E)
+  nsmul_zero P := binNsmul_zero _ _ P
+  nsmul_succ n P := by
+    haveI := instIsElliptic E
+    refine binNsmul_succ ?_ ?_ n P
+    · exact fun a b c => SWPoint.ext_pair (add_assoc E.B_nonzero a.onCurve b.onCurve c.onCurve)
+    · exact fun a => SWPoint.ext_pair (ShortWeierstrass.add_zero E.A (a.x, a.y))
   zsmul := zsmulRec
   add_assoc P Q R := by
     haveI := instIsElliptic E
@@ -418,12 +443,12 @@ instance (E : SWCurve F) : AddCommGroup (SWPoint E) where
     rw [add_comm (valid_neg P.onCurve) P.onCurve]
     exact add_neg E.A (P.x, P.y))
 
-/-- The group action `n • P` on `SWPoint E` is the spec-level `smul` on the underlying coordinates,
-so the two notions of scalar multiplication agree. -/
+/-- The group action `n • P` on `SWPoint E` is equivalent to the spec-level `smul` on the underlying
+coordinates, so the two notions of scalar multiplication agree. -/
 theorem coords_nsmul {E : SWCurve F} (n : ℕ) (P : SWPoint E) :
     ((n • P).x, (n • P).y) = smul E.A n (P.x, P.y) := by
   induction n with
-  | zero => rfl
+  | zero => rw [zero_nsmul]; rfl
   | succ k ih =>
     rw [succ_nsmul]
     show add E.A ((k • P).x, (k • P).y) (P.x, P.y) = smul E.A (k + 1) (P.x, P.y)

@@ -6,6 +6,7 @@ Authors: Daira-Emma Hopwood
 -/
 import Mathlib.Algebra.Group.Defs
 import Mathlib.Algebra.Group.Basic
+import CompElliptic.ScalarMul
 
 /-!
 # Coordinate systems
@@ -86,7 +87,12 @@ instance : AddCommGroup P.Quot where
   add := (· + ·)
   zero := 0
   neg := (- ·)
-  nsmul := nsmulRec
+  nsmul := binNsmul (· + ·) 0
+  nsmul_zero x := binNsmul_zero _ _ x
+  nsmul_succ n x := by
+    refine binNsmul_succ ?_ ?_ n x
+    · exact fun a b c => Quotient.inductionOn₃ a b c (fun p q r => Quotient.sound (P.add_assoc p.2 q.2 r.2))
+    · exact fun a => Quotient.inductionOn a (fun p => Quotient.sound (P.add_zero p.2))
   zsmul := zsmulRec
   add_assoc := by
     rintro x y z

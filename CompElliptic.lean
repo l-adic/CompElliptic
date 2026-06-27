@@ -5,6 +5,7 @@ as described in the files LICENSE-APACHE and LICENSE-MIT.
 Authors: Daira-Emma Hopwood
 -/
 import CompElliptic.Basic
+import CompElliptic.ScalarMul
 import CompElliptic.CoordinateSystem
 import CompElliptic.Encoding
 import CompElliptic.Encodings.Common
