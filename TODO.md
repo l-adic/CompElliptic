@@ -111,6 +111,10 @@ types + transport) has been consolidated into these and removed.
     `SWPoint E` for any `SWCurve`.
   - [x] closure of the raw `smul` (`valid_smul`, induction on `valid_add`) and `coords_nsmul`
     relating the group action `n • P` to the spec-level `smul` on the underlying coordinates.
+  - [x] Fast `•` (generic `binNsmul`, `ScalarMul.lean`): the `SWPoint E` `nsmul` field is the binary
+    double-and-add `binNsmul`, so `n • P` itself computes in `O(log n)` and is `native_decide`-friendly
+    for `≈ 2^254` scalars while staying the genuine group action (all Mathlib `n • _` lemmas still
+    apply). `DecidableEq (SWPoint E)` added (for `native_decide` on point equality).
 - [x] Non-residue `five_not_isSquare` (Euler's criterion `ZMod.euler_criterion`: `5 ^ (p / 2) = -1
   ≠ 1`) ⟹ no Pallas point has `x = 0` (`no_onCurve_x_zero`), in `Curves/Pasta.lean` — the spec
   §5.4.9.7 property the `(0,0) ≡ 𝒪` representation relies on. The power is evaluated by
@@ -121,15 +125,37 @@ types + transport) has been consolidated into these and removed.
   `isUnit_iff_ne_zero` + `decide` (Pallas `sw_Δ = -10800 ≠ 0`), `B ≠ 0` by `decide`.
 - [x] Vesta `SWCurve` instance (identical, over the Vesta base field), with its own
   `five_not_isSquare` / `no_onCurve_x_zero` (`5` is a non-residue in the Vesta base field too).
-- [ ] A windowed / double-and-add `smul` matching the circuit's scalar decomposition. (The
-  iterated-add `smul` is adequate for *stating* soundness; the circuit's structure is what the
-  gadget proofs reduce to.)
+- [ ] A windowed / double-and-add `smul` matching the **circuit's** scalar decomposition — distinct
+  from the generic computational `binNsmul` above (the group action `n • _`). The iterated-add `smul`
+  is adequate for *stating* soundness; the circuit's structure is what the gadget proofs reduce to.
+
+## CompElliptic — group order (`CurveOrder.lean`, `Curves/PastaOrder.lean`)
+
+- [x] Prime-order pinning without point-counting (`CurveOrder.lean`): `card_eq_of_prime_witness`
+  (pure finite-group theory — a non-identity point killed by prime `r`, with `#G < 2r`, forces
+  `#G = r`); the sqrt-free Hasse bound as `hasseInterval` / `HasseBound`, taken as a hypothesis
+  (Mathlib has no Hasse theorem for `WeierstrassCurve`; cited to Hasse, Crelle 175 (1936),
+  §3.1/§4.2); capstones `card_eq_of_hasse` (explicit gap) and `card_eq_of_hasse_of_field_ge_37`
+  (`37 ≤ #F` plus `r` in the Hasse interval). No `sorry`/`axiom`/`native_decide`; standard axioms.
+- [x] Pallas/Vesta orders (`Curves/PastaOrder.lean`): assuming `HasseBound`, `Pallas.card_eq`
+  (`= PALLAS_SCALAR_CARD`) and `Vesta.card_eq` (`= PALLAS_BASE_CARD`) — the Pasta cycle — with witness
+  `G = (-1, 2)` and `[order] G = 𝒪` discharged by a one-line `native_decide` (fast `•`).
+- [ ] Small-cofactor variant (`#G = h·r` for known `h`): a straightforward Layer-1 generalization,
+  deferred. Needed for Jubjub (cofactor 8), which also needs the Edwards form first.
 
 ## CompElliptic — other forms & the group abstraction (later)
 
 - [x] Coordinate-system abstraction (`CoordinateSystem.lean`): carrier + `Valid` + `Rel` + ops →
   derived `AddCommGroup` on the quotient. The locus of generality; the setoid/quotient that
-  non-injective coordinate systems need lives here. Affine is the `Rel = Eq` instance.
+  non-injective coordinate systems need lives here. Affine is the `Rel = Eq` instance
+  (`affineCoordinateSystem`, in `ShortWeierstrass.lean`). Its `nsmul` is the generic `binNsmul` too,
+  so `n • _` on the quotient (e.g. `affineCoordinateSystem`) is `O(log n)`.
+- [ ] Decide whether to fold `SWPoint E` into `affineCoordinateSystem.Quot` (dropping the redundant
+  affine API). **Defer until there is an actual projective/Jacobian coordinate system** (a
+  non-trivial `Rel`) to judge against — only with a real second instance is the ergonomics tradeoff
+  concrete. Foundationally a wash either way (both rest on `propext` / `Classical.choice` /
+  `Quot.sound`, and `Quot.sound` is already in the footprint everywhere), so it's purely an
+  ergonomics call.
 - [ ] Projective (and/or Jacobian) coordinate system with inversion-free complete formulas,
   transported to Mathlib's `Projective.Point` group, designated the canonical efficient group element
   (`Point`); explicit `toAffine` / `fromAffine` conversions. (Per the efficiency criterion.)
