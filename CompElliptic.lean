@@ -12,4 +12,5 @@ import CompElliptic.Encodings.Pasta
 import CompElliptic.Fields.Pasta
 import CompElliptic.Fields.Sqrt
 import CompElliptic.CurveForms.ShortWeierstrass
+import CompElliptic.CurveOrder
 import CompElliptic.Curves.Pasta
