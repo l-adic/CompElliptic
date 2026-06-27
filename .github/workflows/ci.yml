@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build (lake)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      # Installs the toolchain from `lean-toolchain`, fetches the Mathlib cache,
+      # and runs `lake build` — which also runs the in-file `native_decide` sanity checks.
+      - uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9 # v1.5.0
+
+  generators:
+    name: Field-file generators reproduce
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: Install PARI/GP
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends pari-gp
+      # System python3 (preinstalled on ubuntu-latest) suffices; the generators are stdlib-only
+      # and shell out to `gp` for the factorizations.
+      - name: Regenerate the field files
+        run: |
+          python3 scripts/gen_pasta.py > CompElliptic/Fields/Pasta.lean
+          python3 scripts/gen_jubjub.py > CompElliptic/Fields/Jubjub.lean
+      - name: Fail if the regenerated files differ from the committed ones
+        run: git diff --exit-code CompElliptic/Fields/Pasta.lean CompElliptic/Fields/Jubjub.lean

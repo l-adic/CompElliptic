@@ -193,10 +193,17 @@ types + transport) has been consolidated into these and removed.
 
 ## Tooling and conventions
 
-- [ ] Add CI for CompElliptic (none exists yet): build the Lean library, and check that the
-  field-file generators reproduce their committed outputs unchanged — run `scripts/gen_pasta.py` /
-  `scripts/gen_jubjub.py` and `git diff --exit-code` the regenerated `Fields/*.lean`, so a hand-edit
-  can no longer silently drift from its generator (as `Fields/Pasta.lean` had).
+- [x] CI (`.github/workflows/ci.yml`): two independent jobs/checks. **Build (lake)** — `lean-action`
+  installs the toolchain, fetches the Mathlib cache, and runs `lake build` (which also runs the
+  in-file `native_decide` sanity checks). **Field-file generators reproduce** — installs PARI/GP,
+  re-runs `scripts/gen_pasta.py` / `scripts/gen_jubjub.py` over their committed outputs and
+  `git diff --exit-code`s `Fields/Pasta.lean` / `Fields/Jubjub.lean`, so a hand-edit can no longer
+  silently drift from its generator (as `Fields/Pasta.lean` had). They are separate checks so branch
+  protection can require the build but leave the (PARI/GP-dependent) generator check advisory —
+  configure that in the repo's branch-protection settings. All actions are SHA-pinned (with
+  `# vX.Y.Z` comments) and checkouts use `persist-credentials: false`; a separate `zizmor.yml`
+  (`zizmorcore/zizmor-action`, `min-severity: informational`) audits the workflows for unpinned uses,
+  credential persistence, template injection, and other GitHub-Actions issues — matching `zcash/ironwood`.
 - [ ] Script (under `scripts/`) to check, and update in place, the copyright/licence header on
   every source file (`*.lean`, `*.py`): verify each file starts with the canonical dual-licence
   header (Apache 2.0 or MIT, `LICENSE-APACHE` / `LICENSE-MIT`, `Authors:` line) in the right comment
