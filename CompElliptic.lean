@@ -5,6 +5,7 @@ as described in the files LICENSE-APACHE and LICENSE-MIT.
 Authors: Daira-Emma Hopwood
 -/
 import CompElliptic.Basic
+import CompElliptic.ScalarMul
 import CompElliptic.CoordinateSystem
 import CompElliptic.Encoding
 import CompElliptic.Encodings.Common
@@ -12,4 +13,6 @@ import CompElliptic.Encodings.Pasta
 import CompElliptic.Fields.Pasta
 import CompElliptic.Fields.Sqrt
 import CompElliptic.CurveForms.ShortWeierstrass
+import CompElliptic.CurveOrder
 import CompElliptic.Curves.Pasta
+import CompElliptic.Curves.PastaOrder
