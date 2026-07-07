@@ -40,9 +40,9 @@ theorem card_eq (hHasse : HasseBound curve) :
     Nat.card (SWPoint curve) = PALLAS_SCALAR_CARD := by
   refine card_eq_of_hasse_of_field_ge_37 curve PALLAS_SCALAR_is_prime Gpt_ne_zero
     scalarCard_nsmul_Gpt hHasse ?_ ?_
-  · rw [show Fintype.card PallasBaseField = PALLAS_BASE_CARD from ZMod.card _]
+  · rw [show Fintype.card Fp = PALLAS_BASE_CARD from ZMod.card _]
     simp only [hasseInterval, Set.mem_setOf_eq]; native_decide
-  · rw [show Fintype.card PallasBaseField = PALLAS_BASE_CARD from ZMod.card _]; decide
+  · rw [show Fintype.card Fp = PALLAS_BASE_CARD from ZMod.card _]; decide
 
 end Pallas
 
@@ -61,9 +61,9 @@ theorem card_eq (hHasse : HasseBound curve) :
     Nat.card (SWPoint curve) = PALLAS_BASE_CARD := by
   refine card_eq_of_hasse_of_field_ge_37 curve PALLAS_BASE_is_prime Gpt_ne_zero
     baseCard_nsmul_Gpt hHasse ?_ ?_
-  · rw [show Fintype.card VestaBaseField = PALLAS_SCALAR_CARD from ZMod.card _]
+  · rw [show Fintype.card Fq = PALLAS_SCALAR_CARD from ZMod.card _]
     simp only [hasseInterval, Set.mem_setOf_eq]; native_decide
-  · rw [show Fintype.card VestaBaseField = PALLAS_SCALAR_CARD from ZMod.card _]; decide
+  · rw [show Fintype.card Fq = PALLAS_SCALAR_CARD from ZMod.card _]; decide
 
 end Vesta
 
