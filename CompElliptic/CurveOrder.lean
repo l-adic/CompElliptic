@@ -42,20 +42,26 @@ open CompElliptic.CurveForms.ShortWeierstrass
 
 /-! ## Layer 1: pin the order from a prime-order witness (any finite additive group) -/
 
+/-- **The prime-order witness step.** A non-identity `P` killed by a prime `r` has `addOrderOf P`
+exactly `r` (`addOrderOf_eq_prime`), so `r ∣ #G` by Lagrange.
+
+This is the half of the argument that uses the witness, and the only half; everything downstream
+just rules out the remaining multiples of `r` using an upper bound on `#G`. -/
+theorem dvd_natCard_of_prime_witness {G : Type*} [AddGroup G] [Finite G] {r : ℕ}
+    (hr : r.Prime) {P : G} (hP : P ≠ 0) (hPr : r • P = 0) : r ∣ Nat.card G := by
+  haveI := Fact.mk hr
+  exact addOrderOf_eq_prime hPr hP ▸ addOrderOf_dvd_natCard P
+
 /-- If `r` is prime, the finite additive group `G` has a non-identity element `P` killed by `r`
 (`r • P = 0`), and `#G < 2r`, then `#G = r`.
 
-`r • P = 0` gives `addOrderOf P ∣ r`; primality and `P ≠ 0` upgrade this to `addOrderOf P = r`,
-so `r ∣ #G` by Lagrange. With `0 < #G < 2r` the only multiple of `r` available is `r` itself. -/
+The witness gives `r ∣ #G` (`dvd_natCard_of_prime_witness`); with `0 < #G < 2r` the only multiple
+of `r` available is `r` itself. -/
 theorem card_eq_of_prime_witness {G : Type*} [AddGroup G] [Finite G] {r : ℕ}
     (hr : r.Prime) {P : G} (hP : P ≠ 0) (hPr : r • P = 0)
     (hlt : Nat.card G < 2 * r) : Nat.card G = r := by
-  have hdvd : addOrderOf P ∣ r := addOrderOf_dvd_iff_nsmul_eq_zero.mpr hPr
-  have hne1 : addOrderOf P ≠ 1 := by simp [hP]
-  have hord : addOrderOf P = r := (hr.eq_one_or_self_of_dvd _ hdvd).resolve_left hne1
-  have hrdvd : r ∣ Nat.card G := hord ▸ addOrderOf_dvd_natCard P
   have hne0 : Nat.card G ≠ 0 := Nat.card_ne_zero.mpr ⟨⟨P⟩, inferInstance⟩
-  exact Nat.eq_of_dvd_of_lt_two_mul hne0 hrdvd hlt
+  exact Nat.eq_of_dvd_of_lt_two_mul hne0 (dvd_natCard_of_prime_witness hr hP hPr) hlt
 
 /-! ## Layer 2: the Hasse bound (assumed; not yet in Mathlib) discharges `#G < 2r` -/
 
@@ -105,10 +111,11 @@ as a hypothesis where needed. -/
 def HasseBound {F : Type*} [Field F] [Fintype F] (E : SWCurve F) : Prop :=
   Nat.card (SWPoint E) ∈ hasseInterval (Fintype.card F)
 
-/-- `SWPoint E` is finite whenever the base field is, by the injection into `F × F`. -/
+/-- `SWPoint E` is finite whenever the base field is: it is a subtype of `F × F`
+(`SWPoint.equivSubtype`). -/
 instance instFiniteSWPoint {F : Type*} [Field F] [DecidableEq F] [Fintype F] (E : SWCurve F) :
     Finite (SWPoint E) :=
-  Finite.of_injective (fun P => (P.x, P.y)) (fun _ _ h => SWPoint.ext_pair h)
+  Finite.of_equiv _ (SWPoint.equivSubtype E).symm
 
 /-- **Order of a prime-order short-Weierstrass curve group, via Hasse.** Given Hasse's bound
 (assumed), a prime `r`, a non-identity point `P` with `r • P = 0`, and the concrete gap
