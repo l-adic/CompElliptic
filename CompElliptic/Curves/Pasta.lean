@@ -6,6 +6,7 @@ Authors: Daira-Emma Hopwood
 -/
 import CompElliptic.CurveForms.ShortWeierstrass
 import CompElliptic.Fields.Pasta
+import CompElliptic.Fields.Residue
 import Mathlib.NumberTheory.LegendreSymbol.Basic
 
 /-!
@@ -27,18 +28,18 @@ open CompElliptic.CurveForms.ShortWeierstrass CompElliptic.Fields.Pasta
 namespace Pallas
 
 /-- Pallas: `y² = x³ + 5` over the Pallas base field (`A = 0`, `B = 5`). -/
-def a : PallasBaseField := 0
-def b : PallasBaseField := 5
+def a : Fp := 0
+def b : Fp := 5
 
 /-- A convenient prime-order point `(-1, 2)` for testing (just a test point, not a
 protocol-specified base). -/
-def G : PallasBaseField × PallasBaseField := (-1, 2)
+def G : Fp × Fp := (-1, 2)
 
 theorem b_ne_zero : b ≠ 0 := by decide
 
 /-- The Pallas curve as a rich `SWCurve`: ellipticity (`sw_Δ 0 5 = -10800 ≠ 0`, so `IsUnit`) and
 `B ≠ 0` discharged by computation. -/
-def curve : SWCurve PallasBaseField where
+def curve : SWCurve Fp where
   A := a
   B := b
   IsElliptic := by rw [isUnit_iff_ne_zero]; decide
@@ -54,14 +55,14 @@ theorem not_onCurve_zero : ¬ OnCurve a b (0, 0) :=
 Euler's criterion (`ZMod.euler_criterion`) reduces this to `5 ^ (p / 2) ≠ 1`. The LHS (`-1`) is
 evaluated by `reduce_mod_char` (fast modular exponentiation via `NormNum.PowMod`), the same
 machinery the `PrattPartList.prime` legs use for their `a ^ k ≠ 1` conditions. -/
-theorem five_not_isSquare : ¬ IsSquare (5 : PallasBaseField) := by
-  rw [ZMod.euler_criterion PALLAS_BASE_CARD (by decide : (5 : PallasBaseField) ≠ 0)]
+theorem five_not_isSquare : ¬ IsSquare (5 : Fp) := by
+  rw [ZMod.euler_criterion PALLAS_BASE_CARD (by decide : (5 : Fp) ≠ 0)]
   reduce_mod_char
   decide
 
 /-- Consequently no point on the Pallas curve has `x`-coordinate `0`, so `x = 0` denotes `𝒪`
 unambiguously. -/
-theorem no_onCurve_x_zero (y : PallasBaseField) : ¬ OnCurve a b (0, y) := by
+theorem no_onCurve_x_zero (y : Fp) : ¬ OnCurve a b (0, y) := by
   intro h
   have h' : y ^ 2 = 5 := by simpa [OnCurve, a, b] using h
   exact five_not_isSquare ⟨y, by rw [← h', pow_two]⟩
@@ -90,19 +91,19 @@ end Pallas
 
 namespace Vesta
 
-/-- Vesta: `y² = x³ + 5` over the Vesta base field (`= PallasScalarField`; `A = 0`, `B = 5`). -/
-def a : VestaBaseField := 0
-def b : VestaBaseField := 5
+/-- Vesta: `y² = x³ + 5` over the Vesta base field (`= Fq`; `A = 0`, `B = 5`). -/
+def a : Fq := 0
+def b : Fq := 5
 
 /-- A convenient prime-order point `(-1, 2)` for testing (just a test point, not a
 protocol-specified base). -/
-def G : VestaBaseField × VestaBaseField := (-1, 2)
+def G : Fq × Fq := (-1, 2)
 
 theorem b_ne_zero : b ≠ 0 := by decide
 
 /-- The Vesta curve as a rich `SWCurve`: ellipticity (`sw_Δ 0 5 = -10800 ≠ 0`, so `IsUnit`) and
 `B ≠ 0` discharged by computation. -/
-def curve : SWCurve VestaBaseField where
+def curve : SWCurve Fq where
   A := a
   B := b
   IsElliptic := by rw [isUnit_iff_ne_zero]; decide
@@ -117,17 +118,41 @@ theorem not_onCurve_zero : ¬ OnCurve a b (0, 0) :=
 
 As for Pallas: Euler's criterion (`ZMod.euler_criterion`) reduces this to `5 ^ (q / 2) ≠ 1`, and
 `reduce_mod_char` (fast modular exponentiation) evaluates the power to `-1`. -/
-theorem five_not_isSquare : ¬ IsSquare (5 : VestaBaseField) := by
-  rw [ZMod.euler_criterion PALLAS_SCALAR_CARD (by decide : (5 : VestaBaseField) ≠ 0)]
+theorem five_not_isSquare : ¬ IsSquare (5 : Fq) := by
+  rw [ZMod.euler_criterion PALLAS_SCALAR_CARD (by decide : (5 : Fq) ≠ 0)]
   reduce_mod_char
   decide
 
 /-- Consequently no point on the Vesta curve has `x`-coordinate `0`, so `x = 0` denotes `𝒪`
 unambiguously. -/
-theorem no_onCurve_x_zero (y : VestaBaseField) : ¬ OnCurve a b (0, y) := by
+theorem no_onCurve_x_zero (y : Fq) : ¬ OnCurve a b (0, y) := by
   intro h
   have h' : y ^ 2 = 5 := by simpa [OnCurve, a, b] using h
   exact five_not_isSquare ⟨y, by rw [← h', pow_two]⟩
+
+/-- `-5` is not a cube in the Vesta base field — the cubic analogue of `five_not_isSquare`, and
+what rules out 2-torsion on the Vesta curve.
+
+`3 ∣ q - 1`, so `not_exists_pow_eq_of_pow_ne_one` reduces this to the single power
+`(-5)^((q-1)/3)`, which is not `1`. As for `five_not_isSquare`, `reduce_mod_char` (fast modular
+exponentiation) evaluates it and the kernel re-checks the result. -/
+theorem neg_five_not_isCube : ¬ ∃ x : Fq, x ^ 3 = -(5 : Fq) := by
+  have hcard : Fintype.card Fq = PALLAS_SCALAR_CARD := ZMod.card _
+  refine Fields.not_exists_pow_eq_of_pow_ne_one (n := 3) (by rw [hcard]; decide) (by decide) ?_
+  rw [hcard]
+  -- `reduce_mod_char` keys on the `ZMod` spelling of the type, which the `Fq` abbrev hides;
+  -- `show` re-exposes it. (The `Field` instances agree — `(inferInstance : Field Fq) =
+  -- ZMod.instField _` is `rfl` — so this is only about how the goal is written.)
+  show (-(5 : ZMod PALLAS_SCALAR_CARD)) ^ ((PALLAS_SCALAR_CARD - 1) / 3) ≠ 1
+  reduce_mod_char
+  decide
+
+/-- No point on the Vesta curve has `y`-coordinate `0`: that would need `x³ = -5`, and `-5` is not
+a cube (`neg_five_not_isCube`). Equivalently, the Vesta group has no 2-torsion. -/
+theorem no_onCurve_y_zero (x : Fq) : ¬ OnCurve a b (x, 0) := by
+  intro h
+  have hsum : x ^ 3 + 5 = 0 := by simpa [OnCurve, a, b] using h.symm
+  exact neg_five_not_isCube ⟨x, by linear_combination hsum⟩
 
 -- `(-1, 2)` is on the curve: `2² = 4 = (-1)³ + 5`.
 example : OnCurve a b G := by native_decide

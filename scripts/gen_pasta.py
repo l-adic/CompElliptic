@@ -45,14 +45,9 @@ namespace CompElliptic.Fields.Pasta
 
 FOOTER = """\
 
-/-- Vesta base field = Pallas scalar field. -/
-abbrev VestaBaseField := PallasScalarField
-/-- Vesta scalar field = Pallas base field. -/
-abbrev VestaScalarField := PallasBaseField
-
 /-- Tonelli–Shanks data for the Pallas base field `𝔽ₚ`: `p-1 = 2^32 · T`, with `rootOfUnity = 5ᵀ`
 (`pallas.py`). -/
-def pallasBase : TonelliShanks PallasBaseField where
+def pallasBase : TonelliShanks Fp where
   twoAdicity := 32
   oddPart := 0x40000000000000000000000000000000224698fc094cf91b992d30ed
   rootOfUnity := 0x2bce74deac30ebda362120830561f81aea322bf2b7bb7584bdad6fabd87ea32f
@@ -61,11 +56,11 @@ def pallasBase : TonelliShanks PallasBaseField where
 example : (pallasBase.sqrt? 4).map (· ^ 2) = some 4 := by native_decide
 example : pallasBase.sqrt? 5 = none := by native_decide
 -- `√((-1)³ + 5) = √4`: the `y` of the test point `G = (-1, 2)`.
-example : (pallasBase.sqrt? ((-1 : PallasBaseField)^3 + 5)).map (· ^ 2) = some 4 := by native_decide
+example : (pallasBase.sqrt? ((-1 : Fp)^3 + 5)).map (· ^ 2) = some 4 := by native_decide
 
-/-- Tonelli–Shanks data for the Vesta base field `𝔽_q` (`= PallasScalarField`): `q-1 = 2^32 · T`,
+/-- Tonelli–Shanks data for the Vesta base field `𝔽_q` (`= Fq`): `q-1 = 2^32 · T`,
 with `rootOfUnity = 5ᵀ` (`vesta.py`). -/
-def vestaBase : TonelliShanks VestaBaseField where
+def vestaBase : TonelliShanks Fq where
   twoAdicity := 32
   oddPart := 0x40000000000000000000000000000000224698fc0994a8dd8c46eb21
   rootOfUnity := 0x2de6a9b8746d3f589e5c4dfd492ae26e9bb97ea3c106f049a70e2c1102b6d05f
@@ -74,7 +69,7 @@ def vestaBase : TonelliShanks VestaBaseField where
 example : (vestaBase.sqrt? 4).map (· ^ 2) = some 4 := by native_decide
 example : vestaBase.sqrt? 5 = none := by native_decide
 -- `√((-1)³ + 5) = √4`: the `y` of the test point `G = (-1, 2)`.
-example : (vestaBase.sqrt? ((-1 : VestaBaseField)^3 + 5)).map (· ^ 2) = some 4 := by native_decide
+example : (vestaBase.sqrt? ((-1 : Fq)^3 + 5)).map (· ^ 2) = some 4 := by native_decide
 
 end CompElliptic.Fields.Pasta
 """
@@ -82,9 +77,13 @@ end CompElliptic.Fields.Pasta
 
 if __name__ == "__main__":
     out = HEADER
-    out += field_block("PALLAS_BASE", P, "PallasBaseField",
-                       "Pallas base field p (= Vesta scalar field).")
-    out += field_block("PALLAS_SCALAR", Q, "PallasScalarField",
-                       "Pallas scalar field q (= Vesta base field).")
+    out += field_block("PALLAS_BASE", P, "Fp",
+                       "Pallas base field p (= Vesta scalar field).",
+                       fielddoc="The Pallas base field `𝔽ₚ` — also the Vesta scalar field "
+                                "(the Pasta cycle).")
+    out += field_block("PALLAS_SCALAR", Q, "Fq",
+                       "Pallas scalar field q (= Vesta base field).",
+                       fielddoc="The Pallas scalar field `𝔽_q` — also the Vesta base field "
+                                "(the Pasta cycle).")
     out += FOOTER
     print(out, end="")

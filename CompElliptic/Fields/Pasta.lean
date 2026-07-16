@@ -22,7 +22,8 @@ namespace CompElliptic.Fields.Pasta
 -- Pallas base field p (= Vesta scalar field).
 @[reducible] def PALLAS_BASE_CARD : Nat := 0x40000000000000000000000000000000224698fc094cf91b992d30ed00000001
 
-abbrev PallasBaseField := ZMod PALLAS_BASE_CARD
+/-- The Pallas base field `𝔽ₚ` — also the Vesta scalar field (the Pasta cycle). -/
+abbrev Fp := ZMod PALLAS_BASE_CARD
 
 theorem PALLAS_BASE_is_prime : Nat.Prime PALLAS_BASE_CARD := by
   unfold PALLAS_BASE_CARD
@@ -88,12 +89,13 @@ theorem PALLAS_BASE_is_prime : Nat.Prime PALLAS_BASE_CARD := by
       · exact .prime 772231 1 _ (by pratt) (by reduce_mod_char; decide) (by norm_num)
 
 instance : Fact (Nat.Prime PALLAS_BASE_CARD) := ⟨PALLAS_BASE_is_prime⟩
-instance : Field PallasBaseField := ZMod.instField PALLAS_BASE_CARD
+instance : Field Fp := ZMod.instField PALLAS_BASE_CARD
 
 -- Pallas scalar field q (= Vesta base field).
 @[reducible] def PALLAS_SCALAR_CARD : Nat := 0x40000000000000000000000000000000224698fc0994a8dd8c46eb2100000001
 
-abbrev PallasScalarField := ZMod PALLAS_SCALAR_CARD
+/-- The Pallas scalar field `𝔽_q` — also the Vesta base field (the Pasta cycle). -/
+abbrev Fq := ZMod PALLAS_SCALAR_CARD
 
 theorem PALLAS_SCALAR_is_prime : Nat.Prime PALLAS_SCALAR_CARD := by
   unfold PALLAS_SCALAR_CARD
@@ -159,16 +161,11 @@ theorem PALLAS_SCALAR_is_prime : Nat.Prime PALLAS_SCALAR_CARD := by
       · exact .prime 31649 1 _ (by pratt) (by reduce_mod_char; decide) (by norm_num)
 
 instance : Fact (Nat.Prime PALLAS_SCALAR_CARD) := ⟨PALLAS_SCALAR_is_prime⟩
-instance : Field PallasScalarField := ZMod.instField PALLAS_SCALAR_CARD
-
-/-- Vesta base field = Pallas scalar field. -/
-abbrev VestaBaseField := PallasScalarField
-/-- Vesta scalar field = Pallas base field. -/
-abbrev VestaScalarField := PallasBaseField
+instance : Field Fq := ZMod.instField PALLAS_SCALAR_CARD
 
 /-- Tonelli–Shanks data for the Pallas base field `𝔽ₚ`: `p-1 = 2^32 · T`, with `rootOfUnity = 5ᵀ`
 (`pallas.py`). -/
-def pallasBase : TonelliShanks PallasBaseField where
+def pallasBase : TonelliShanks Fp where
   twoAdicity := 32
   oddPart := 0x40000000000000000000000000000000224698fc094cf91b992d30ed
   rootOfUnity := 0x2bce74deac30ebda362120830561f81aea322bf2b7bb7584bdad6fabd87ea32f
@@ -177,11 +174,11 @@ def pallasBase : TonelliShanks PallasBaseField where
 example : (pallasBase.sqrt? 4).map (· ^ 2) = some 4 := by native_decide
 example : pallasBase.sqrt? 5 = none := by native_decide
 -- `√((-1)³ + 5) = √4`: the `y` of the test point `G = (-1, 2)`.
-example : (pallasBase.sqrt? ((-1 : PallasBaseField)^3 + 5)).map (· ^ 2) = some 4 := by native_decide
+example : (pallasBase.sqrt? ((-1 : Fp)^3 + 5)).map (· ^ 2) = some 4 := by native_decide
 
-/-- Tonelli–Shanks data for the Vesta base field `𝔽_q` (`= PallasScalarField`): `q-1 = 2^32 · T`,
+/-- Tonelli–Shanks data for the Vesta base field `𝔽_q` (`= Fq`): `q-1 = 2^32 · T`,
 with `rootOfUnity = 5ᵀ` (`vesta.py`). -/
-def vestaBase : TonelliShanks VestaBaseField where
+def vestaBase : TonelliShanks Fq where
   twoAdicity := 32
   oddPart := 0x40000000000000000000000000000000224698fc0994a8dd8c46eb21
   rootOfUnity := 0x2de6a9b8746d3f589e5c4dfd492ae26e9bb97ea3c106f049a70e2c1102b6d05f
@@ -190,6 +187,6 @@ def vestaBase : TonelliShanks VestaBaseField where
 example : (vestaBase.sqrt? 4).map (· ^ 2) = some 4 := by native_decide
 example : vestaBase.sqrt? 5 = none := by native_decide
 -- `√((-1)³ + 5) = √4`: the `y` of the test point `G = (-1, 2)`.
-example : (vestaBase.sqrt? ((-1 : VestaBaseField)^3 + 5)).map (· ^ 2) = some 4 := by native_decide
+example : (vestaBase.sqrt? ((-1 : Fq)^3 + 5)).map (· ^ 2) = some 4 := by native_decide
 
 end CompElliptic.Fields.Pasta

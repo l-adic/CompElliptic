@@ -11,6 +11,7 @@ import CompElliptic.Encoding
 import CompElliptic.Encodings.Common
 import CompElliptic.Encodings.Pasta
 import CompElliptic.Fields.Pasta
+import CompElliptic.Fields.Residue
 import CompElliptic.Fields.Sqrt
 import CompElliptic.CurveForms.ShortWeierstrass
 import CompElliptic.CurveOrder
