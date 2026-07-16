@@ -69,11 +69,13 @@ def theorem(name: str, card: int) -> str:
     return f"theorem {name}_is_prime : Nat.Prime {name}_CARD := by\n  unfold {name}_CARD\n{body}"
 
 
-def field_block(name: str, card: int, fieldabbrev: str, doc: str) -> str:
+def field_block(name: str, card: int, fieldabbrev: str, doc: str,
+                fielddoc: str | None = None) -> str:
+    fielddoc_line = f"/-- {fielddoc} -/\n" if fielddoc else ""
     return (
         f"\n-- {doc}\n"
         f"@[reducible] def {name}_CARD : Nat := 0x{card:x}\n\n"
-        f"abbrev {fieldabbrev} := ZMod {name}_CARD\n\n"
+        f"{fielddoc_line}abbrev {fieldabbrev} := ZMod {name}_CARD\n\n"
         f"{theorem(name, card)}\n\n"
         f"instance : Fact (Nat.Prime {name}_CARD) := ⟨{name}_is_prime⟩\n"
         f"instance : Field {fieldabbrev} := ZMod.instField {name}_CARD\n"
