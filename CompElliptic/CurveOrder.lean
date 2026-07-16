@@ -2,7 +2,7 @@
 Copyright (c) 2026 CompElliptic Contributors. All rights reserved.
 Released under the Apache License, Version 2.0, or the MIT license, at your option,
 as described in the files LICENSE-APACHE and LICENSE-MIT.
-Authors: Daira-Emma Hopwood
+Authors: Daira-Emma Hopwood, Gregor Mitscha-Baude
 -/
 import CompElliptic.CurveForms.ShortWeierstrass
 import Mathlib.GroupTheory.OrderOfElement
@@ -15,25 +15,28 @@ no point-counting algorithm (no Schoof, no proof of a counting algorithm's corre
 It needs only:
 
 1. a non-identity point P killed by r (so r ∣ #G, since r is prime); and
-2. an *upper* bound #G < 2r, which can be provided by the Hasse bound for elliptic curves.
+2. an upper bound on #G that leaves r (rather than some multiple ≥ 2r) as the only possible #G.
 
-This module is the curve-agnostic core of that argument, in two layers.
+This module supplies both layers, and neither assumes any general theorem — in particular not
+Hasse's theorem, which Mathlib lacks for `WeierstrassCurve`.
 
 * **Layer 1 — pure finite-group theory.** `card_eq_of_prime_witness` holds for *any* finite
   additive group, with no reference to elliptic curves. A witness of r • P = 0 forces r ∣ #G,
-  and #G < 2r then forces #G = r.
+  and #G < 2r then forces #G = r. `card_eq_of_prime_witness_of_lt_three_mul` reaches the same
+  conclusion from the weaker #G < 3r, at the price of ruling out 2-torsion (which kills the extra
+  candidate 2r by Cauchy's theorem).
 
-* **Layer 2 — the Hasse bound.** If G is any elliptic curve E(F) over any finite field F of
-  order q ≥ 37, Hasse's theorem |#E(F) - (q+1)| ≤ 2·√q supplies the #G < 2r premiss provided
-  that r also satisfies the Hasse bound. For a prime-order cryptographic curve r ≈ q, so 2r
-  sits far above the Hasse upper bound. Mathlib does not yet have Hasse's theorem for
-  `WeierstrassCurve`, so we state it as a predicate (`HasseBound`) and take it as a hypothesis.
+* **Layer 2 — the fibre bound.** For a short-Weierstrass curve E over any finite field F, the
+  equation y² = x³ + A x + B has at most two roots y for each fixed x; summing over #F choices of
+  x and adding 𝒪 gives `#E(F) ≤ 2·#F + 1` (`card_le_two_mul_card_add_one`), with no arithmetic
+  geometry. This overshoots the true count by a factor of about two where Hasse overshoots by only
+  2√q, but it is unconditional, and it is enough whenever the prime r is close to the field size —
+  exactly the situation for a prime-order cryptographic curve. Which of Layer 1's thresholds it
+  clears is then decided by the two concrete numbers #F and r.
 
-This is an application of the *Independently re-checkable trust* principle: the one piece
-of trust beyond the kernel + standard axioms is a single *named general theorem* (Hasse),
-flagged as an explicit hypothesis. It is separated from the concrete *closed numeric* fact
-4q < (2r - (q+1))² (`hgap`), or alternatively the Hasse bound on r (`hr`), either of which
-can be verified by any independent tool.
+This is an application of the *Independently re-checkable trust* principle: no general theorem is
+assumed, and all that a caller must discharge are closed numeric facts about #F and r, verifiable
+by any independent tool.
 -/
 
 namespace CompElliptic.CurveOrder
@@ -59,57 +62,40 @@ The witness gives `r ∣ #G` (`dvd_natCard_of_prime_witness`); with `0 < #G < 2r
 of `r` available is `r` itself. -/
 theorem card_eq_of_prime_witness {G : Type*} [AddGroup G] [Finite G] {r : ℕ}
     (hr : r.Prime) {P : G} (hP : P ≠ 0) (hPr : r • P = 0)
-    (hlt : Nat.card G < 2 * r) : Nat.card G = r := by
+    (hlt2r : Nat.card G < 2 * r) : Nat.card G = r := by
   have hne0 : Nat.card G ≠ 0 := Nat.card_ne_zero.mpr ⟨⟨P⟩, inferInstance⟩
-  exact Nat.eq_of_dvd_of_lt_two_mul hne0 (dvd_natCard_of_prime_witness hr hP hPr) hlt
+  exact Nat.eq_of_dvd_of_lt_two_mul hne0 (dvd_natCard_of_prime_witness hr hP hPr) hlt2r
 
-/-! ## Layer 2: the Hasse bound (assumed; not yet in Mathlib) discharges `#G < 2r` -/
+/-- The same conclusion as `card_eq_of_prime_witness` from a weaker bound `#G < 3r`, at the price
+of ruling out 2-torsion (`hOdd`).
 
-/-- The Hasse interval for a field of size `q`: the cardinalities `n` within `2√q` of `q + 1`,
-written sqrt-free over `ℤ` as `(n - (q+1))² ≤ 4·q` (equivalently `|n - (q+1)| ≤ 2√q`). By Hasse's
-theorem every point count `#E(F)` lies in it (with `q = #F`); we use the same interval to constrain
-a candidate prime order. -/
-def hasseInterval (q : ℕ) : Set ℕ := { n | ((n : ℤ) - (q+1))^2 ≤ 4*q }
+`#G < 2r` leaves `r` as the only multiple of `r` in range; `#G < 3r` also admits `2r`. That case is
+excluded by parity rather than by counting: `#G = 2r` is even, so Cauchy's theorem would supply an
+element of order exactly 2, which `hOdd` forbids.
 
-/-- The arithmetic step from Hasse to the layer-1 premiss, purely over `ℕ`/`ℤ` and independent of
-any particular curve. From the sqrt-free Hasse inequality on `N` relative to the field size `q`
-(`(N - (q+1))² ≤ 4·q`), the concrete gap `4·q < (2r - (q+1))²`, and `q + 1 ≤ 2r`, conclude `N < 2r`.
-(Only the *upper* Hasse bound is used; the gap and `q + 1 ≤ 2r` are closed facts about the two
-relevant numbers, true here because `r ≈ q` so `2r` clears the upper bound with room.) -/
-theorem lt_two_mul_of_hasse {N q r : ℕ}
-    (hHasse : N ∈ hasseInterval q)
-    (hgap : 4*(q : ℤ) < (2*r - (q+1))^2)
-    (hle : (q : ℤ) + 1 ≤ 2*r) :
-    N < 2*r := by
-  simp only [hasseInterval, Set.mem_setOf_eq] at hHasse
-  by_contra hcon
-  rw [not_lt] at hcon
-  have hN : (2*r : ℤ) ≤ (N : ℤ) := by exact_mod_cast hcon
-  have h0 : (0 : ℤ) ≤ 2*r - (q+1) := by linarith
-  have h1 : 2*(r : ℤ) - (q+1) ≤ (N : ℤ) - (q+1) := by linarith
-  have hmono : (2*(r : ℤ) - (q+1))^2 ≤ ((N : ℤ) - (q+1))^2 := pow_le_pow_left₀ h0 h1 2
-  linarith
-
-/-- The Hasse bound for a short-Weierstrass elliptic curve `E` over a finite field `F` with
-`q = #F`: `|#E(F) - (q+1)| ≤ 2·√q`, written sqrt-free over `ℤ` as `(#E(F) - (q+1))² ≤ 4·q`,
-where `#E(F) = Nat.card (SWPoint E)`.
-
-This is Hasse's theorem, the "Riemann hypothesis for elliptic function fields":
-
-> H. Hasse, *Zur Theorie der abstrakten elliptischen Funktionenkörper III: Die Struktur des
-> Meromorphismenrings; Die Riemannsche Vermutung*, Journal für die reine und angewandte
-> Mathematik (Crelle's Journal) *175* (1936), 193–208. doi:10.1515/crll.1936.175.193.
-
-The point-count form used here is §4.2 (p. 206): for `N₁` the number of degree-one prime divisors
-(`= #E(F)`, the `F`-rational places including `𝒪`) and `q = #F`, `(q + 1 - N₁)² ≤ 4q`. It rests on
-§3.1 (p. 203), where the Frobenius meromorphism `π : (x, y) ↦ (x^q, y^q)` satisfies
-`Q(π) = π² - lπ + q = 0` with `l² ≤ 4q`. A scan of part III is available at
-https://download.uni-mainz.de/mathematik/Algebraische%20Geometrie/Lehre/WS23.Padische.Hasse.III.pdf
-
-Mathlib does not yet carry this for `WeierstrassCurve`, so we define the statement and take it
-as a hypothesis where needed. -/
-def HasseBound {F : Type*} [Field F] [Fintype F] (E : SWCurve F) : Prop :=
-  Nat.card (SWPoint E) ∈ hasseInterval (Fintype.card F)
+The weaker bound is what an elementary point count affords when the prime sits just below the field
+size, so this is the entry point for callers who cannot reach `2r` — but the argument is pure
+finite-group theory and mentions no curve. -/
+theorem card_eq_of_prime_witness_of_lt_three_mul {G : Type*} [AddGroup G] [Finite G] {r : ℕ}
+    (hrPrime : r.Prime) {P : G} (hP : P ≠ 0) (hrP : r • P = 0)
+    (hlt3r : Nat.card G < 3 * r) (hOdd : ∀ Q : G, 2 • Q = 0 → Q = 0) : Nat.card G = r := by
+  obtain ⟨k, hk⟩ := dvd_natCard_of_prime_witness hrPrime hP hrP
+  -- `#G = r * k` with `r * k < 3 * r`, so `k < 3`; `k = 0` contradicts `0 < #G`.
+  have hklt3 : k < 3 := by
+    refine Nat.lt_of_mul_lt_mul_left (a := r) ?_
+    simp_all only [nsmul_zero, ne_eq, mul_comm]
+  have hkne0 : k ≠ 0 := by
+    rintro rfl
+    exact absurd (hk.trans (Nat.mul_zero r)) Nat.card_pos.ne'
+  -- `k = 2` would make `#G` even, so Cauchy would give an element of order 2 — excluded by `hOdd`.
+  have hkne2 : k ≠ 2 := by
+    rintro rfl
+    haveI : Fintype G := Fintype.ofFinite _
+    have hEven : 2 ∣ Fintype.card G := ⟨r, by rw [← Nat.card_eq_fintype_card, hk]; ring⟩
+    obtain ⟨Q, hQ⟩ := exists_prime_addOrderOf_dvd_card 2 hEven
+    have hQ0 : Q ≠ 0 := fun h => by simp [h, addOrderOf_zero] at hQ
+    exact hQ0 (hOdd Q (hQ ▸ addOrderOf_nsmul_eq_zero Q))
+  rw [hk, show k = 1 by omega, Nat.mul_one]
 
 /-- `SWPoint E` is finite whenever the base field is: it is a subtype of `F × F`
 (`SWPoint.equivSubtype`). -/
@@ -117,57 +103,111 @@ instance instFiniteSWPoint {F : Type*} [Field F] [DecidableEq F] [Fintype F] (E 
     Finite (SWPoint E) :=
   Finite.of_equiv _ (SWPoint.equivSubtype E).symm
 
-/-- **Order of a prime-order short-Weierstrass curve group, via Hasse.** Given Hasse's bound
-(assumed), a prime `r`, a non-identity point `P` with `r • P = 0`, and the concrete gap
-`4q < (2r - (q+1))²` together with `q + 1 ≤ 2r`, the curve group has exactly `r` points. -/
-theorem card_eq_of_hasse {F : Type*} [Field F] [DecidableEq F] [Fintype F] (E : SWCurve F)
-    {r : ℕ} (hrPrime : r.Prime) {P : SWPoint E} (hP : P ≠ 0) (hPr : r • P = 0)
-    (hHasse : HasseBound E)
-    (hgap : 4*(Fintype.card F : ℤ) < (2*r - (Fintype.card F + 1))^2)
-    (hle : (Fintype.card F : ℤ) + 1 ≤ 2*r) :
+/-! ## Layer 2: the fibre bound `#E(F) ≤ 2 · #F + 1` -/
+
+variable {F : Type*} [Field F] [DecidableEq F]
+
+/-- **At most two points share an x-coordinate.** Two on-curve points sharing an `x` have
+`y² = x³ + A x + B` for the *same* right-hand side, so `(y₁ − y₂)(y₁ + y₂) = 0` and hence
+`y₁ = y₂ ∨ y₁ = −y₂` — the short-Weierstrass form of `WeierstrassCurve.Affine.Y_eq_of_X_eq`.
+The fibre for any point is therefore contained in the two-element set `{(x, y), (x, −y)}`. -/
+theorem card_fibre_le_two [Fintype F] (E : SWCurve F) (x : F) :
+    ((Finset.univ.filter fun R : F × F => OnCurve E.A E.B R).filter
+      fun R => R.1 = x).card ≤ 2 := by
+  rcases ((Finset.univ.filter fun R : F × F => OnCurve E.A E.B R).filter
+      fun R => R.1 = x).eq_empty_or_nonempty with hR | ⟨P, hP⟩
+  · simp [hR]
+  · simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hP
+    obtain ⟨hPOnCurve, hxP⟩ := hP
+    refine le_trans (Finset.card_le_card ?_) ((Finset.card_insert_le P {(x, -P.2)}).trans (by simp))
+    intro Q hQ
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hQ
+    obtain ⟨hQOnCurve, hxQ⟩ := hQ
+    have hsq : Q.2 ^ 2 = P.2 ^ 2 := by
+      simp only [OnCurve] at hPOnCurve hQOnCurve
+      rw [hPOnCurve, hQOnCurve, hxP, hxQ]
+    have hfac : (Q.2 - P.2) * (Q.2 + P.2) = 0 := by linear_combination hsq
+    rcases mul_eq_zero.mp hfac with h | h
+    · exact Finset.mem_insert.mpr (Or.inl (Prod.ext (hxQ.trans hxP.symm) (sub_eq_zero.mp h)))
+    · exact Finset.mem_insert.mpr
+        (Or.inr (Finset.mem_singleton.mpr (Prod.ext hxQ (eq_neg_of_add_eq_zero_left h))))
+
+/-- **The unconditional cardinality bound**: at most two points per `x`-coordinate
+(`card_fibre_le_two`) over `#F` choices of `x`, plus the identity `𝒪`.
+
+This is elementary and holds for every short-Weierstrass curve over every finite field; it is
+looser than Hasse (which Mathlib lacks) but needs no algebraic geometry. -/
+theorem card_le_two_mul_card_add_one [Fintype F] (E : SWCurve F) :
+    Nat.card (SWPoint E) ≤ 2 * Fintype.card F + 1 := by
+  rw [Nat.card_congr (SWPoint.equivSubtype E), Nat.card_eq_fintype_card, Fintype.card_subtype]
+  have hsub : (Finset.univ.filter fun R : F × F => Valid E.A E.B R) ⊆
+      (Finset.univ.filter fun R : F × F => OnCurve E.A E.B R) ∪ {((0 : F), (0 : F))} := by
+    intro R hR
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_union,
+      Finset.mem_singleton] at hR ⊢
+    exact hR
+  calc (Finset.univ.filter fun R : F × F => Valid E.A E.B R).card
+      ≤ ((Finset.univ.filter fun R : F × F => OnCurve E.A E.B R) ∪ {0}).card :=
+        Finset.card_le_card hsub
+    _ ≤ (Finset.univ.filter fun R : F × F => OnCurve E.A E.B R).card + 1 :=
+        le_trans (Finset.card_union_le _ _) (by simp)
+    _ ≤ 2 * Fintype.card F + 1 := by
+        have h := Finset.card_le_mul_card_image_of_maps_to
+          (f := Prod.fst) (t := (Finset.univ : Finset F))
+          (fun _ _ => Finset.mem_univ _) 2 (fun x _ => card_fibre_le_two E x)
+        rw [Finset.card_univ] at h
+        omega
+
+/-! ## Order pinning from the fibre bound
+
+Both results below feed `card_le_two_mul_card_add_one` into Layer 1, replacing its `#G < 2r` (resp.
+`#G < 3r`) premiss by a closed numeric comparison between `#F` and `r`. -/
+
+/-- **Order of a prime-order curve group whose prime exceeds the field size.** If the prime `r`
+kills the non-identity point `P` and `2 · #F + 1 < 2r`, the curve group has exactly `r` points.
+
+The Layer 1 core `card_eq_of_prime_witness`, with the upper bound supplied by
+`card_le_two_mul_card_add_one`. -/
+theorem card_eq_of_prime_witness_of_card_lt_two_mul [Fintype F] (E : SWCurve F) {r : ℕ}
+    (hrPrime : r.Prime) {P : SWPoint E} (hP : P ≠ 0) (hPr : r • P = 0)
+    (hBound : 2 * Fintype.card F + 1 < 2 * r) :
     Nat.card (SWPoint E) = r :=
-  card_eq_of_prime_witness hrPrime hP hPr (lt_two_mul_of_hasse hHasse hgap hle)
+  card_eq_of_prime_witness hrPrime hP hPr
+    (lt_of_le_of_lt (card_le_two_mul_card_add_one E) hBound)
 
-/-! ## Alternative approach that reaches the same conclusion -/
+/-- No 2-torsion on a curve, in odd characteristic, no point of which has `y = 0`.
 
-/-- Convenience form of `lt_two_mul_of_hasse` for callers who already hold the two-sided Hasse
-bound. For `37 ≤ q` (the least prime power for which `2·(q + 1 - 2√q) > q + 1 + 2√q`), the
-explicit gap inequalities are implied by the Hasse bound on `r` itself: a `r` in the Hasse interval
-`[q + 1 - 2√q, q + 1 + 2√q]` has `2r ≥ 2·(q + 1 - 2√q) > q + 1 + 2√q ≥ N`, so `N < 2r`.
+A point with `2 • Q = 0` satisfies `Q = -Q`, hence `Q.y = -Q.y` and so `2 · Q.y = 0`; with
+`2 ≠ 0` that forces `Q.y = 0`. An on-curve point cannot then exist by hypothesis, leaving
+only the sentinel `𝒪`. This discharges the `hOdd` side condition of
+`card_eq_of_prime_witness_of_card_lt_three_mul`. -/
+theorem eq_zero_of_two_nsmul_eq_zero {E : SWCurve F} (h2ne0 : (2 : F) ≠ 0)
+    (hy : ∀ x : F, ¬ OnCurve E.A E.B (x, 0)) {Q : SWPoint E} (hQ : 2 • Q = 0) : Q = 0 := by
+  rw [two_nsmul] at hQ
+  have hNeg : Q = -Q := eq_neg_of_add_eq_zero_left hQ
+  have hyy : Q.y = -Q.y := by rw [← SWPoint.neg_y Q, ← hNeg]
+  have hQy : Q.y = 0 := by
+    have h2y : 2 * Q.y = 0 := by linear_combination hyy
+    exact (mul_eq_zero.mp h2y).resolve_left h2ne0
+  rcases Q.onCurve with hc | h0
+  · rw [hQy] at hc
+    exact absurd hc (hy Q.x)
+  · exact SWPoint.ext_pair h0
 
-The Hasse bound on `r` (`hr`) is essential — `37 ≤ q` alone is unsound. A witness of small prime
-order (e.g. an order-2 point on a group of composite order in the interval) would otherwise force a
-wrong conclusion; `hr` pins `r` to the interval from below, ruling that out. -/
-theorem lt_two_mul_of_hasse_of_field_ge_37 {N q r : ℕ}
-    (hN : N ∈ hasseInterval q)
-    (hr : r ∈ hasseInterval q)
-    (hq : 37 ≤ q) :
-    N < 2*r := by
-  simp only [hasseInterval, Set.mem_setOf_eq] at hN hr
-  have hq' : (36 : ℤ) < q := by exact_mod_cast hq
-  by_contra hcon
-  rw [not_lt] at hcon
-  have hcon' : 2 * (r : ℤ) ≤ (N : ℤ) := by exact_mod_cast hcon
-  -- Writing `n = N - (q+1)`, `m = r - (q+1)`: from `hN`/`hr`, `(n - 2m)² ≤ 3n² + 6m² ≤ 36·q`
-  -- (the `sq_nonneg (n+m)` hint supplies `-4nm ≤ 2(n² + m²)`); but `N ≥ 2r` gives `n - 2m ≥ q+1`,
-  -- so `(q+1)² ≤ (n-2m)² ≤ 36·q`, contradicting `37 ≤ q` (where `(q+1)² > 36·q`).
-  nlinarith [hN, hr, hq', hcon',
-    sq_nonneg ((N : ℤ) - (q+1) + ((r : ℤ) - (q+1))),
-    mul_nonneg (show (0 : ℤ) ≤ (N : ℤ) - 2*r by linarith)
-               (show (0 : ℤ) ≤ (N : ℤ) - 2*r + 2*((q : ℤ)+1) by linarith)]
+/-- **Order of a prime-order curve group whose prime is below the field size.** There the fibre
+bound only yields `#E(F) < 3r`, admitting `#E(F) = 2r` alongside `#E(F) = r`. Given additionally
+that the group has no 2-torsion, `2r` is impossible, and `#E(F) = r`.
 
-/-- Curve-level capstone of the `37 ≤ #F` route: combine `HasseBound` (assumed) with `37 ≤ #F` and
-the Hasse bound on the prime `r` to conclude the curve group has exactly `r` points, without the
-caller having to supply the explicit gap inequalities `hgap` and `hle`.
-
-`hHasse` is definitionally the two-sided bound on `#E(F)` that `lt_two_mul_of_hasse_of_field_ge_37`
-needs; see there for why `hr` is needed. -/
-theorem card_eq_of_hasse_of_field_ge_37 {F : Type*} [Field F] [DecidableEq F] [Fintype F]
-    (E : SWCurve F) {r : ℕ} (hrPrime : r.Prime) {P : SWPoint E} (hP : P ≠ 0) (hPr : r • P = 0)
-    (hHasse : HasseBound E)
-    (hr : r ∈ hasseInterval (Fintype.card F))
-    (hq : 37 ≤ Fintype.card F) :
+The curve-free half is Layer 1's `card_eq_of_prime_witness_of_lt_three_mul`; all this adds is the
+fibre bound, so that the caller supplies a comparison between `#F` and `r` rather than one against
+`#E(F)`. Use `eq_zero_of_two_nsmul_eq_zero` to supply `hOdd` from the absence of curve points with
+`y = 0`. -/
+theorem card_eq_of_prime_witness_of_card_lt_three_mul [Fintype F] (E : SWCurve F) {r : ℕ}
+    (hrPrime : r.Prime) {P : SWPoint E} (hP : P ≠ 0) (hPr : r • P = 0)
+    (hBound : 2 * Fintype.card F + 1 < 3 * r)
+    (hOdd : ∀ Q : SWPoint E, 2 • Q = 0 → Q = 0) :
     Nat.card (SWPoint E) = r :=
-  card_eq_of_prime_witness hrPrime hP hPr (lt_two_mul_of_hasse_of_field_ge_37 hHasse hr hq)
+  card_eq_of_prime_witness_of_lt_three_mul hrPrime hP hPr
+    (lt_of_le_of_lt (card_le_two_mul_card_add_one E) hBound) hOdd
 
 end CompElliptic.CurveOrder
