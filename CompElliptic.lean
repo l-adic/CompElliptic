@@ -16,3 +16,4 @@ import CompElliptic.CurveForms.ShortWeierstrass
 import CompElliptic.CurveOrder
 import CompElliptic.Curves.Pasta
 import CompElliptic.Curves.PastaOrder
+import CompElliptic.Curves.PastaEndo
