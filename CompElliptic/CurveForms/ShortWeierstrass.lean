@@ -46,6 +46,11 @@ instance (a b : F) (p : F × F) : Decidable (OnCurve a b p) := by unfold OnCurve
 /-- A representable point: on the curve, or the `(0, 0)` identity sentinel `𝒪`. -/
 def Valid (a b : F) (p : F × F) : Prop := OnCurve a b p ∨ p = (0, 0)
 
+/-- Representability is decidable too: being on the curve is, and so is the `(0, 0)` sentinel test.
+This is what lets a representable point be exhibited by `decide`, and `SWPoint E` be counted as a
+subtype of `F × F`. -/
+instance (a b : F) (p : F × F) : Decidable (Valid a b p) := by unfold Valid; infer_instance
+
 omit [DecidableEq F] in
 /-- The `(0, 0)` sentinel is off the curve exactly when `b ≠ 0` (which holds for any elliptic
 curve: `a = b = 0` is the singular cusp `y² = x³`). This is what makes `(0, 0) ≡ 𝒪` unambiguous. -/
@@ -389,6 +394,15 @@ theorem SWPoint.ext_pair {E : SWCurve F} {P Q : SWPoint E}
   injection h with hx hy
   subst hx; subst hy; rfl
 
+/-- Points on `E` are exactly the valid coordinate pairs: the carried `onCurve` proof is a `Prop`,
+so nothing is lost by passing to the subtype. This is the bridge to anything `F × F` already knows —
+decidable equality, finiteness, and counting `SWPoint E` as a `Finset` of pairs. -/
+def SWPoint.equivSubtype (E : SWCurve F) : SWPoint E ≃ { pr : F × F // Valid E.A E.B pr } where
+  toFun P := ⟨(P.x, P.y), P.onCurve⟩
+  invFun pr := ⟨pr.1.1, pr.1.2, pr.2⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
+
 /-- Addition lifted to `SWPoint E`; closure from `valid_add`. -/
 def sw_add {E : SWCurve F} (P Q : SWPoint E) : SWPoint E :=
   haveI := instIsElliptic E
@@ -403,6 +417,15 @@ instance (E : SWCurve F) : Zero (SWPoint E) := ⟨SWPoint.zero E⟩
 instance (E : SWCurve F) : Add (SWPoint E) := ⟨sw_add⟩
 instance (E : SWCurve F) : Neg (SWPoint E) := ⟨sw_neg⟩
 
+omit [DecidableEq F] in
+/-- Negation fixes the `x`-coordinate. True by `rfl` (`sw_neg` is `neg` on the coordinates), but
+worth naming: without it every caller re-derives it inline. -/
+@[simp] theorem SWPoint.neg_x {E : SWCurve F} (P : SWPoint E) : (-P).x = P.x := rfl
+
+omit [DecidableEq F] in
+/-- Negation negates the `y`-coordinate — the one fact that makes `2 • P = 0` say `P.y = -P.y`. -/
+@[simp] theorem SWPoint.neg_y {E : SWCurve F} (P : SWPoint E) : (-P).y = -P.y := rfl
+
 /-! ### Fast (logarithmic) scalar multiplication
 
 The spec-level `smul` is linear (`n` additions), so it cannot be evaluated by `decide` or
@@ -413,9 +436,9 @@ double-and-add `CompElliptic.binNsmul` over the raw `sw_add` / `SWPoint.zero`. S
 `n • _` lemma still applies, since they follow from `nsmul_zero` and `nsmul_succ`. -/
 
 /-- `SWPoint E` has decidable equality (the `onCurve` field is a `Prop`, so equality reduces to the
-coordinate pair); needed for `native_decide` on `n • P = Q`. -/
-instance instDecidableEqSWPoint {E : SWCurve F} : DecidableEq (SWPoint E) := fun P Q =>
-  decidable_of_iff ((P.x, P.y) = (Q.x, Q.y)) ⟨SWPoint.ext_pair, fun h => by rw [h]⟩
+coordinate pair, via `SWPoint.equivSubtype`); needed for `native_decide` on `n • P = Q`. -/
+instance instDecidableEqSWPoint {E : SWCurve F} : DecidableEq (SWPoint E) :=
+  (SWPoint.equivSubtype E).decidableEq
 
 /-- The abelian group of representable points on `E`: identity laws and inverses are immediate;
 commutativity and associativity transport from the raw `add` lemmas, whose hypotheses are discharged
