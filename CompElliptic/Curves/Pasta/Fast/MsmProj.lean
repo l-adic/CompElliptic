@@ -10,7 +10,7 @@ import CompElliptic.Curves.Pasta.Fast.Projective
 /-!
 # The windowed Pippenger MSM run entirely in projective coordinates
 
-Instantiated at the Vesta affine group, every group addition of `Msm.lean` pays a field inversion.
+Instantiated at a curve's affine group, every group addition of `Msm.lean` pays a field inversion.
 This module runs the whole Pippenger interior over `Projective.PVes` with `padd`/`pnsmulFast` —
 one inversion per MSM instead of one per add — and proves the result equal to the affine
 accelerator (`pippengerProj_eq`, `pippengerProjScatter_eq`, and `..._eq_msm` to the naive MSM).
@@ -19,6 +19,10 @@ accelerator (`pippengerProj_eq`, `pippengerProjScatter_eq`, and `..._eq_msm` to 
 Pippenger equality is not re-run here: each fold of `Msm.lean` is mirrored by a `padd`/`pid`
 version and shown to commute with `toAffine`, carrying `Valid` through every intermediate
 (`psum_spec`, `pbucketOf_spec`, `foldr_paccStep_spec`, `pwindowValue_spec`, `phornerList_spec`).
+
+Everything is generic over the base field `F` and a curve `E` with `E.A = 0`, `E.B = 5`, with the
+no-2-torsion hypothesis `hy0` threaded exactly as in `Projective.lean`; only the `commit_lagrange`
+wrappers at the end are Vesta-specific (their coefficients live in `VestaScalarField`).
 
 The `Fast` interfaces are provisional: they are not guaranteed to remain public, and
 may be folded into the existing API or otherwise changed incompatibly.
@@ -34,6 +38,9 @@ open CompElliptic.Curves.Pasta
 
 namespace CompElliptic.Curves.Pasta.Fast.MsmProj
 
+variable {F : Type*} [Field F]
+variable (E : SWCurve F) (hA : E.A = 0) (hB : E.B = 5)
+
 /-- The Vesta affine group carries a default point, needed to instantiate the `Fast.Msm` wrapper
 (`commitLagrangeSpec`, `commitLagrangeFastWith_eq`) whose section fixes `[Inhabited G]`. -/
 local instance : Inhabited Projective.G := ⟨0⟩
@@ -41,13 +48,14 @@ local instance : Inhabited Projective.G := ⟨0⟩
 /-! ## Projective bucket sum (`foldr padd pid`), mirroring `Fast.Msm.bucketOf` -/
 
 /-- The `padd`-fold sum of a list of projective points, from the projective identity `pid`. -/
-def psum (L : List PVes) : PVes := L.foldr padd pid
+def psum (L : List (PVes F)) : PVes F := L.foldr padd pid
 
-theorem psum_cons (a : PVes) (xs : List PVes) : psum (a :: xs) = padd a (psum xs) := rfl
+theorem psum_cons (a : PVes F) (xs : List (PVes F)) : psum (a :: xs) = padd a (psum xs) := rfl
 
 /-- A projective `padd`-sum of valid points is valid, and `toAffine` carries it to the affine sum. -/
-theorem psum_spec (L : List PVes) (h : ∀ P ∈ L, Valid P) :
-    Valid (psum L) ∧ toAffine (psum L) = (L.map toAffine).sum := by
+theorem psum_spec [DecidableEq F] (hy0 : ∀ x : F, ¬ OnCurve 0 5 (x, 0))
+    (L : List (PVes F)) (h : ∀ P ∈ L, Valid P) :
+    Valid (psum L) ∧ toAffine E hA hB (psum L) = (L.map (toAffine E hA hB)).sum := by
   induction L with
   | nil => exact ⟨valid_pid, by simp [psum, toAffine_pid]⟩
   | cons a xs ih =>
@@ -55,18 +63,20 @@ theorem psum_spec (L : List PVes) (h : ∀ P ∈ L, Valid P) :
     have hxs : ∀ P ∈ xs, Valid P := fun P hP => h P (by simp [hP])
     obtain ⟨hvxs, hxseq⟩ := ih hxs
     rw [psum_cons]
-    exact ⟨valid_padd ha hvxs, by rw [toAffine_padd ha hvxs, hxseq, List.map_cons, List.sum_cons]⟩
+    exact ⟨valid_padd hy0 ha hvxs, by
+      rw [toAffine_padd E hA hB hy0 ha hvxs, hxseq, List.map_cons, List.sum_cons]⟩
 
 /-- The projective bucket-`b` sum: `padd`-fold the points whose digit tag is `b`. -/
-def pbucketOf (dp : List (ℕ × PVes)) (b : ℕ) : PVes :=
+def pbucketOf (dp : List (ℕ × PVes F)) (b : ℕ) : PVes F :=
   psum (dp.filterMap fun p => if p.1 = b then some p.2 else none)
 
 /-- The projective bucket sum is valid and matches `Fast.Msm.bucketOf` of the `toAffine`-mapped
 digit-tagged list. -/
-theorem pbucketOf_spec (dp : List (ℕ × PVes)) (b : ℕ) (h : ∀ p ∈ dp, Valid p.2) :
+theorem pbucketOf_spec [DecidableEq F] (hy0 : ∀ x : F, ¬ OnCurve 0 5 (x, 0))
+    (dp : List (ℕ × PVes F)) (b : ℕ) (h : ∀ p ∈ dp, Valid p.2) :
     Valid (pbucketOf dp b)
-      ∧ toAffine (pbucketOf dp b)
-        = Msm.bucketOf (dp.map fun t => (t.1, toAffine t.2)) b := by
+      ∧ toAffine E hA hB (pbucketOf dp b)
+        = Msm.bucketOf (dp.map fun t => (t.1, toAffine E hA hB t.2)) b := by
   have hval : ∀ P ∈ dp.filterMap (fun p => if p.1 = b then some p.2 else none), Valid P := by
     intro P hP
     rw [List.mem_filterMap] at hP
@@ -74,7 +84,7 @@ theorem pbucketOf_spec (dp : List (ℕ × PVes)) (b : ℕ) (h : ∀ p ∈ dp, Va
     by_cases hc : q.1 = b
     · rw [if_pos hc, Option.some.injEq] at hqeq; rw [← hqeq]; exact h q hq
     · rw [if_neg hc] at hqeq; exact absurd hqeq (by simp)
-  obtain ⟨hv, heq⟩ := psum_spec _ hval
+  obtain ⟨hv, heq⟩ := psum_spec E hA hB hy0 _ hval
   refine ⟨hv, ?_⟩
   rw [pbucketOf, heq, Msm.bucketOf, List.filterMap_map, List.map_filterMap]
   refine congrArg List.sum (congrArg (dp.filterMap ·) ?_)
@@ -85,15 +95,18 @@ theorem pbucketOf_spec (dp : List (ℕ × PVes)) (b : ℕ) (h : ∀ p ∈ dp, Va
 
 /-- One step of the projective suffix-sum accumulator: carry `(running, total)`, `padd` the next
 bucket into `running`, then `padd` `running` into `total`. -/
-def paccStep (a : PVes) (p : PVes × PVes) : PVes × PVes :=
+def paccStep (a : PVes F) (p : PVes F × PVes F) : PVes F × PVes F :=
   (padd p.1 a, padd p.2 (padd p.1 a))
 
 /-- Folding `paccStep` over valid points keeps both accumulator components valid, and `toAffine`
 carries the whole fold (componentwise) to the affine `Fast.Msm.accStep` fold. -/
-theorem foldr_paccStep_spec (L : List PVes) (h : ∀ P ∈ L, Valid P) :
+theorem foldr_paccStep_spec [DecidableEq F] (hy0 : ∀ x : F, ¬ OnCurve 0 5 (x, 0))
+    (L : List (PVes F)) (h : ∀ P ∈ L, Valid P) :
     Valid (L.foldr paccStep (pid, pid)).1 ∧ Valid (L.foldr paccStep (pid, pid)).2
-      ∧ (toAffine (L.foldr paccStep (pid, pid)).1, toAffine (L.foldr paccStep (pid, pid)).2)
-        = List.foldr Msm.accStep ((0 : Projective.G), (0 : Projective.G)) (L.map toAffine) := by
+      ∧ (toAffine E hA hB (L.foldr paccStep (pid, pid)).1,
+          toAffine E hA hB (L.foldr paccStep (pid, pid)).2)
+        = List.foldr Msm.accStep ((0 : SWPoint E), (0 : SWPoint E))
+            (L.map (toAffine E hA hB)) := by
   induction L with
   | nil => exact ⟨valid_pid, valid_pid, by simp [toAffine_pid]⟩
   | cons a xs ih =>
@@ -103,30 +116,30 @@ theorem foldr_paccStep_spec (L : List PVes) (h : ∀ P ∈ L, Valid P) :
     have hstep : (a :: xs).foldr paccStep (pid, pid) = paccStep a (xs.foldr paccStep (pid, pid)) :=
       rfl
     rw [hstep]
-    have hv1' : Valid (padd (xs.foldr paccStep (pid, pid)).1 a) := valid_padd hv1 ha
-    refine ⟨hv1', valid_padd hv2 hv1', ?_⟩
+    have hv1' : Valid (padd (xs.foldr paccStep (pid, pid)).1 a) := valid_padd hy0 hv1 ha
+    refine ⟨hv1', valid_padd hy0 hv2 hv1', ?_⟩
     rw [List.map_cons, List.foldr_cons, ← heq, Msm.accStep]
-    simp only [paccStep, toAffine_padd hv1 ha, toAffine_padd hv2 hv1']
+    simp only [paccStep, toAffine_padd E hA hB hy0 hv1 ha, toAffine_padd E hA hB hy0 hv2 hv1']
 
 /-! ## Projective window value, mirroring `Fast.Msm.windowValue` -/
 
 /-- The digit-tagged projective term list for window `i`. -/
-def pdpOf (base i : ℕ) (pterms : List (ℕ × PVes)) : List (ℕ × PVes) :=
+def pdpOf (base i : ℕ) (pterms : List (ℕ × PVes F)) : List (ℕ × PVes F) :=
   pterms.map fun t => (Msm.digit base i t.1, t.2)
 
 /-- The projective window value: build the `base − 1` projective buckets, then run the projective
 suffix-sum accumulation. -/
-def pwindowValue (base i : ℕ) (pterms : List (ℕ × PVes)) : PVes :=
+def pwindowValue (base i : ℕ) (pterms : List (ℕ × PVes F)) : PVes F :=
   (List.foldr paccStep (pid, pid)
     ((List.range (base - 1)).map fun k => pbucketOf (pdpOf base i pterms) (k + 1))).2
 
 /-- The projective window value is valid and matches `Fast.Msm.windowValue` of the `toAffine`-mapped
 terms. -/
-theorem pwindowValue_spec (base i : ℕ) (pterms : List (ℕ × PVes))
-    (h : ∀ p ∈ pterms, Valid p.2) :
+theorem pwindowValue_spec [DecidableEq F] (hy0 : ∀ x : F, ¬ OnCurve 0 5 (x, 0))
+    (base i : ℕ) (pterms : List (ℕ × PVes F)) (h : ∀ p ∈ pterms, Valid p.2) :
     Valid (pwindowValue base i pterms)
-      ∧ toAffine (pwindowValue base i pterms)
-        = Msm.windowValue base i (pterms.map fun t => (t.1, toAffine t.2)) := by
+      ∧ toAffine E hA hB (pwindowValue base i pterms)
+        = Msm.windowValue base i (pterms.map fun t => (t.1, toAffine E hA hB t.2)) := by
   have hdp : ∀ p ∈ pdpOf base i pterms, Valid p.2 := by
     intro p hp
     rw [pdpOf, List.mem_map] at hp
@@ -139,16 +152,17 @@ theorem pwindowValue_spec (base i : ℕ) (pterms : List (ℕ × PVes))
     intro P hP
     rw [hbuck, List.mem_map] at hP
     obtain ⟨k, _, rfl⟩ := hP
-    exact (pbucketOf_spec _ _ hdp).1
-  obtain ⟨_, hv2, heq⟩ := foldr_paccStep_spec buckets hbval
+    exact (pbucketOf_spec E hA hB hy0 _ _ hdp).1
+  obtain ⟨_, hv2, heq⟩ := foldr_paccStep_spec E hA hB hy0 buckets hbval
   refine ⟨hv2, ?_⟩
-  have hmap : buckets.map toAffine
+  have hmap : buckets.map (toAffine E hA hB)
       = (List.range (base - 1)).map fun k =>
-          Msm.bucketOf (Msm.dpOf base i (pterms.map fun t => (t.1, toAffine t.2))) (k + 1) := by
+          Msm.bucketOf (Msm.dpOf base i (pterms.map fun t => (t.1, toAffine E hA hB t.2)))
+            (k + 1) := by
     rw [hbuck, List.map_map]
     apply List.map_congr_left
     intro k _
-    rw [Function.comp_apply, (pbucketOf_spec _ _ hdp).2]
+    rw [Function.comp_apply, (pbucketOf_spec E hA hB hy0 _ _ hdp).2]
     congr 1
     simp only [pdpOf, Msm.dpOf, List.map_map, Function.comp_def]
   rw [Msm.windowValue, ← hmap, ← heq]
@@ -157,14 +171,16 @@ theorem pwindowValue_spec (base i : ℕ) (pterms : List (ℕ × PVes))
 
 /-- Horner across windows in projective coordinates: each `base •` doubling is the fast binary
 scalar multiplication `pnsmulFast base`, and the window value is folded in with `padd`. -/
-def phornerList (base : ℕ) (vals : List PVes) : PVes :=
+def phornerList (base : ℕ) (vals : List (PVes F)) : PVes F :=
   List.foldr (fun v acc => padd (pnsmulFast base acc) v) pid vals
 
 /-- The projective Horner fold is valid and matches `Fast.Msm.hornerList` of the `toAffine`-mapped
 window values; each `2^c`-fold doubling transports via `pnsmulFast_spec`. -/
-theorem phornerList_spec (base : ℕ) (vals : List PVes) (h : ∀ P ∈ vals, Valid P) :
+theorem phornerList_spec [DecidableEq F] (hy0 : ∀ x : F, ¬ OnCurve 0 5 (x, 0))
+    (base : ℕ) (vals : List (PVes F)) (h : ∀ P ∈ vals, Valid P) :
     Valid (phornerList base vals)
-      ∧ toAffine (phornerList base vals) = Msm.hornerList base (vals.map toAffine) := by
+      ∧ toAffine E hA hB (phornerList base vals)
+        = Msm.hornerList base (vals.map (toAffine E hA hB)) := by
   induction vals with
   | nil => exact ⟨valid_pid, by simp [phornerList, Msm.hornerList, toAffine_pid]⟩
   | cons v xs ih =>
@@ -174,9 +190,9 @@ theorem phornerList_spec (base : ℕ) (vals : List PVes) (h : ∀ P ∈ vals, Va
     have hstep : phornerList base (v :: xs)
         = padd (pnsmulFast base (phornerList base xs)) v := rfl
     rw [hstep]
-    refine ⟨valid_padd (pnsmulFast_spec hvacc base).1 hv, ?_⟩
-    rw [toAffine_padd (pnsmulFast_spec hvacc base).1 hv, (pnsmulFast_spec hvacc base).2, heq,
-      List.map_cons]
+    have hacc := pnsmulFast_spec E hA hB hy0 hvacc base
+    refine ⟨valid_padd hy0 hacc.1 hv, ?_⟩
+    rw [toAffine_padd E hA hB hy0 hacc.1 hv, hacc.2, heq, List.map_cons]
     simp only [Msm.hornerList, List.foldr_cons]
 
 /-! ## The projective Pippenger MSM and its equality to the affine accelerator -/
@@ -185,27 +201,28 @@ theorem phornerList_spec (base : ℕ) (vals : List PVes) (h : ∀ P ∈ vals, Va
 `ofAffine`; the same windowed algorithm (digits, buckets, suffix-sum, Horner doublings) runs over
 `PVes` with `padd`/`pnsmulFast`; a single `toAffine` (one field inversion) is taken at the end.
 Proven equal to the affine `Fast.Msm.pippenger` (`pippengerProj_eq`). -/
-def pippengerProj (c : ℕ) (terms : List (ℕ × Projective.G)) : Projective.G :=
-  toAffine (phornerList (2 ^ c)
+def pippengerProj [DecidableEq F] (c : ℕ) (terms : List (ℕ × SWPoint E)) : SWPoint E :=
+  toAffine E hA hB (phornerList (2 ^ c)
     ((List.range (Msm.numWindows c terms)).map fun i =>
-      pwindowValue (2 ^ c) i (terms.map fun t => (t.1, ofAffine t.2))))
+      pwindowValue (2 ^ c) i (terms.map fun t => (t.1, ofAffine E t.2))))
 
 /-- **The projective Pippenger equals the affine Pippenger.**  Lifting by `ofAffine` and reading back
 by `toAffine` is the identity on terms (`toAffine_ofAffine`); each window and the Horner fold commute
 with `toAffine` (`pwindowValue_spec`, `phornerList_spec`), so the whole projective interior collapses
 to the affine `Fast.Msm.pippenger`. -/
-theorem pippengerProj_eq (c : ℕ) (terms : List (ℕ × Projective.G)) :
-    pippengerProj c terms = Msm.pippenger c terms := by
+theorem pippengerProj_eq [DecidableEq F] (hy0 : ∀ x : F, ¬ OnCurve 0 5 (x, 0))
+    (c : ℕ) (terms : List (ℕ × SWPoint E)) :
+    pippengerProj E hA hB c terms = Msm.pippenger c terms := by
   rw [pippengerProj]
-  set pterms := terms.map (fun t => (t.1, ofAffine t.2)) with hpterms
+  set pterms := terms.map (fun t => (t.1, ofAffine E t.2)) with hpterms
   set windows := (List.range (Msm.numWindows c terms)).map fun i => pwindowValue (2 ^ c) i pterms
     with hwin
   have hval : ∀ p ∈ pterms, Valid p.2 := by
     intro p hp
     rw [hpterms, List.mem_map] at hp
     obtain ⟨t, _, rfl⟩ := hp
-    exact valid_ofAffine t.2
-  have hf : pterms.map (fun t => (t.1, toAffine t.2)) = terms := by
+    exact valid_ofAffine E hA hB t.2
+  have hf : pterms.map (fun t => (t.1, toAffine E hA hB t.2)) = terms := by
     rw [hpterms, List.map_map]
     conv_rhs => rw [← List.map_id terms]
     apply List.map_congr_left
@@ -215,18 +232,19 @@ theorem pippengerProj_eq (c : ℕ) (terms : List (ℕ × Projective.G)) :
     intro P hP
     rw [hwin, List.mem_map] at hP
     obtain ⟨i, _, rfl⟩ := hP
-    exact (pwindowValue_spec (2 ^ c) i pterms hval).1
-  rw [(phornerList_spec (2 ^ c) windows hwval).2, Msm.pippenger]
+    exact (pwindowValue_spec E hA hB hy0 (2 ^ c) i pterms hval).1
+  rw [(phornerList_spec E hA hB hy0 (2 ^ c) windows hwval).2, Msm.pippenger]
   congr 1
   rw [hwin, List.map_map]
   apply List.map_congr_left
   intro i _
-  rw [Function.comp_apply, (pwindowValue_spec (2 ^ c) i pterms hval).2, hf]
+  rw [Function.comp_apply, (pwindowValue_spec E hA hB hy0 (2 ^ c) i pterms hval).2, hf]
 
 /-- **The projective Pippenger equals the naive MSM.**  End-to-end correctness for `c ≥ 1`. -/
-theorem pippengerProj_eq_msm (c : ℕ) (hc : 0 < c) (terms : List (ℕ × Projective.G)) :
-    pippengerProj c terms = (terms.map fun t => t.1 • t.2).sum := by
-  rw [pippengerProj_eq, Msm.pippenger_eq_msm c hc]
+theorem pippengerProj_eq_msm [DecidableEq F] (hy0 : ∀ x : F, ¬ OnCurve 0 5 (x, 0))
+    (c : ℕ) (hc : 0 < c) (terms : List (ℕ × SWPoint E)) :
+    pippengerProj E hA hB c terms = (terms.map fun t => t.1 • t.2).sum := by
+  rw [pippengerProj_eq E hA hB hy0, Msm.pippenger_eq_msm c hc]
 
 /-! ## Single-pass Array bucketing for the projective interior
 
@@ -237,18 +255,18 @@ nose), so it too is transported through `toAffine` (`foldl_pscatterStep_spec`). 
 
 /-- One projective scatter step: drop digit-`0` terms, otherwise `padd` the point into bucket
 slot `d − 1` (slot `k` holds bucket `k + 1`). -/
-def pscatterStep (a : Array PVes) (p : ℕ × PVes) : Array PVes :=
+def pscatterStep (a : Array (PVes F)) (p : ℕ × PVes F) : Array (PVes F) :=
   if p.1 = 0 then a else a.modify (p.1 - 1) (fun v => padd v p.2)
 
 /-- Scatter a digit-tagged projective point list into its `base − 1` buckets in one pass. -/
-def pbucketScatter (base : ℕ) (dp : List (ℕ × PVes)) : Array PVes :=
+def pbucketScatter (base : ℕ) (dp : List (ℕ × PVes F)) : Array (PVes F) :=
   dp.foldl pscatterStep (Array.replicate (base - 1) pid)
 
-@[simp] theorem size_pscatterStep (a : Array PVes) (p : ℕ × PVes) :
+@[simp] theorem size_pscatterStep (a : Array (PVes F)) (p : ℕ × PVes F) :
     (pscatterStep a p).size = a.size := by
   unfold pscatterStep; split <;> simp
 
-@[simp] theorem size_foldl_pscatterStep (dp : List (ℕ × PVes)) (a : Array PVes) :
+@[simp] theorem size_foldl_pscatterStep (dp : List (ℕ × PVes F)) (a : Array (PVes F)) :
     (dp.foldl pscatterStep a).size = a.size := by
   induction dp generalizing a with
   | nil => rfl
@@ -256,7 +274,7 @@ def pbucketScatter (base : ℕ) (dp : List (ℕ × PVes)) : Array PVes :=
 
 /-- A single projective scatter step through `getElem?`: slot `k` gains a right-`padd` of `x`
 exactly when the digit is `k + 1`. -/
-theorem getElem?_pscatterStep (a : Array PVes) (d : ℕ) (x : PVes) (k : ℕ) :
+theorem getElem?_pscatterStep (a : Array (PVes F)) (d : ℕ) (x : PVes F) (k : ℕ) :
     (pscatterStep a (d, x))[k]?
       = if d = k + 1 then a[k]?.map (fun v => padd v x) else a[k]? := by
   unfold pscatterStep
@@ -269,13 +287,14 @@ theorem getElem?_pscatterStep (a : Array PVes) (d : ℕ) (x : PVes) (k : ℕ) :
     · rw [if_neg (by omega), if_neg hdk]
 
 /-- **The scatter fold invariant, transported through `toAffine`.** Starting from a valid slot
-value `v`, slot `k` ends valid and reads — in `G` — as `toAffine v` plus the affine bucket sum
-of the processed digit-tagged list. -/
-private theorem foldl_pscatterStep_spec (dp : List (ℕ × PVes)) (hdp : ∀ p ∈ dp, Valid p.2) :
-    ∀ (a : Array PVes) (k : ℕ) (v : PVes), a[k]? = some v → Valid v →
+value `v`, slot `k` ends valid and reads — in `SWPoint E` — as `toAffine v` plus the affine
+bucket sum of the processed digit-tagged list. -/
+private theorem foldl_pscatterStep_spec [DecidableEq F] (hy0 : ∀ x : F, ¬ OnCurve 0 5 (x, 0))
+    (dp : List (ℕ × PVes F)) (hdp : ∀ p ∈ dp, Valid p.2) :
+    ∀ (a : Array (PVes F)) (k : ℕ) (v : PVes F), a[k]? = some v → Valid v →
       ∃ w, (dp.foldl pscatterStep a)[k]? = some w ∧ Valid w ∧
-        toAffine w = toAffine v
-          + Msm.bucketOf (dp.map fun t => (t.1, toAffine t.2)) (k + 1) := by
+        toAffine E hA hB w = toAffine E hA hB v
+          + Msm.bucketOf (dp.map fun t => (t.1, toAffine E hA hB t.2)) (k + 1) := by
   induction dp with
   | nil =>
     intro a k v hv hval
@@ -290,9 +309,10 @@ private theorem foldl_pscatterStep_spec (dp : List (ℕ × PVes)) (hdp : ∀ p �
     · have hv' : (pscatterStep a (d, x))[k]? = some (padd v x) := by
         rw [getElem?_pscatterStep, if_pos hdk, hv, Option.map_some]
       obtain ⟨w, hw, hwval, hweq⟩ :=
-        ih hdp' (pscatterStep a (d, x)) k (padd v x) hv' (valid_padd hval hx)
+        ih hdp' (pscatterStep a (d, x)) k (padd v x) hv' (valid_padd hy0 hval hx)
       refine ⟨w, hw, hwval, ?_⟩
-      rw [hweq, toAffine_padd hval hx, List.map_cons, Msm.bucketOf_cons, if_pos hdk, _root_.add_assoc]
+      rw [hweq, toAffine_padd E hA hB hy0 hval hx, List.map_cons, Msm.bucketOf_cons, if_pos hdk,
+        _root_.add_assoc]
     · have hv' : (pscatterStep a (d, x))[k]? = some v := by
         rw [getElem?_pscatterStep, if_neg hdk, hv]
       obtain ⟨w, hw, hwval, hweq⟩ := ih hdp' (pscatterStep a (d, x)) k v hv' hval
@@ -301,21 +321,24 @@ private theorem foldl_pscatterStep_spec (dp : List (ℕ × PVes)) (hdp : ∀ p �
 
 /-- **The scattered buckets are the affine bucket list, slotwise.** Every slot is valid, and
 `toAffine` maps the slot list to exactly the bucket list `Msm.windowValue` folds over. -/
-theorem pbucketScatter_spec (base : ℕ) (dp : List (ℕ × PVes)) (hdp : ∀ p ∈ dp, Valid p.2) :
+theorem pbucketScatter_spec [DecidableEq F] (hy0 : ∀ x : F, ¬ OnCurve 0 5 (x, 0))
+    (base : ℕ) (dp : List (ℕ × PVes F)) (hdp : ∀ p ∈ dp, Valid p.2) :
     (∀ P ∈ (pbucketScatter base dp).toList, Valid P)
-      ∧ (pbucketScatter base dp).toList.map toAffine
+      ∧ (pbucketScatter base dp).toList.map (toAffine E hA hB)
         = (List.range (base - 1)).map fun k =>
-            Msm.bucketOf (dp.map fun t => (t.1, toAffine t.2)) (k + 1) := by
+            Msm.bucketOf (dp.map fun t => (t.1, toAffine E hA hB t.2)) (k + 1) := by
   have hsize : (pbucketScatter base dp).size = base - 1 := by
     rw [pbucketScatter, size_foldl_pscatterStep, Array.size_replicate]
   have hslot : ∀ k, k < base - 1 →
       ∃ w, (pbucketScatter base dp)[k]? = some w ∧ Valid w ∧
-        toAffine w = Msm.bucketOf (dp.map fun t => (t.1, toAffine t.2)) (k + 1) := by
+        toAffine E hA hB w
+          = Msm.bucketOf (dp.map fun t => (t.1, toAffine E hA hB t.2)) (k + 1) := by
     intro k hk
-    have hinit : (Array.replicate (base - 1) pid)[k]? = some pid := by
+    have hinit : (Array.replicate (base - 1) (pid : PVes F))[k]? = some pid := by
       rw [Array.getElem?_replicate, if_pos hk]
     obtain ⟨w, hw, hwval, hweq⟩ :=
-      foldl_pscatterStep_spec dp hdp (Array.replicate (base - 1) pid) k pid hinit valid_pid
+      foldl_pscatterStep_spec E hA hB hy0 dp hdp (Array.replicate (base - 1) pid) k pid hinit
+        valid_pid
     exact ⟨w, hw, hwval, by rw [hweq, toAffine_pid, _root_.zero_add]⟩
   constructor
   · intro P hP
@@ -341,27 +364,27 @@ theorem pbucketScatter_spec (base : ℕ) (dp : List (ℕ × PVes)) (hdp : ∀ p 
 
 /-- The projective window value via the single-pass scatter (mirror of
 `Msm.windowValueFast`). -/
-def pwindowValueFast (base i : ℕ) (pterms : List (ℕ × PVes)) : PVes :=
+def pwindowValueFast (base i : ℕ) (pterms : List (ℕ × PVes F)) : PVes F :=
   (List.foldr paccStep (pid, pid) (pbucketScatter base (pdpOf base i pterms)).toList).2
 
 /-- The scatter-bucketed projective window value is valid and matches `Msm.windowValue` of the
 `toAffine`-mapped terms — the scatter twin of `pwindowValue_spec`. -/
-theorem pwindowValueFast_spec (base i : ℕ) (pterms : List (ℕ × PVes))
-    (h : ∀ p ∈ pterms, Valid p.2) :
+theorem pwindowValueFast_spec [DecidableEq F] (hy0 : ∀ x : F, ¬ OnCurve 0 5 (x, 0))
+    (base i : ℕ) (pterms : List (ℕ × PVes F)) (h : ∀ p ∈ pterms, Valid p.2) :
     Valid (pwindowValueFast base i pterms)
-      ∧ toAffine (pwindowValueFast base i pterms)
-        = Msm.windowValue base i (pterms.map fun t => (t.1, toAffine t.2)) := by
+      ∧ toAffine E hA hB (pwindowValueFast base i pterms)
+        = Msm.windowValue base i (pterms.map fun t => (t.1, toAffine E hA hB t.2)) := by
   have hdp : ∀ p ∈ pdpOf base i pterms, Valid p.2 := by
     intro p hp
     rw [pdpOf, List.mem_map] at hp
     obtain ⟨t, ht, rfl⟩ := hp
     exact h t ht
-  obtain ⟨hbval, hbmap⟩ := pbucketScatter_spec base (pdpOf base i pterms) hdp
-  have hdpof : (pdpOf base i pterms).map (fun t => (t.1, toAffine t.2))
-      = Msm.dpOf base i (pterms.map fun t => (t.1, toAffine t.2)) := by
+  obtain ⟨hbval, hbmap⟩ := pbucketScatter_spec E hA hB hy0 base (pdpOf base i pterms) hdp
+  have hdpof : (pdpOf base i pterms).map (fun t => (t.1, toAffine E hA hB t.2))
+      = Msm.dpOf base i (pterms.map fun t => (t.1, toAffine E hA hB t.2)) := by
     simp only [pdpOf, Msm.dpOf, List.map_map, Function.comp_def]
   rw [hdpof] at hbmap
-  obtain ⟨-, hv2, heq⟩ := foldr_paccStep_spec _ hbval
+  obtain ⟨-, hv2, heq⟩ := foldr_paccStep_spec E hA hB hy0 _ hbval
   simp only [pwindowValueFast]
   refine ⟨hv2, ?_⟩
   rw [Msm.windowValue, ← hbmap, ← heq]
@@ -371,17 +394,18 @@ theorem pwindowValueFast_spec (base i : ℕ) (pterms : List (ℕ × PVes))
 /-- **Windowed Pippenger MSM in projective coordinates with single-pass Array bucketing** —
 the fast serial form of `pippengerProj`. Proven equal to the affine `Msm.pippenger`
 (`pippengerProjScatter_eq`). -/
-def pippengerProjScatter (c : ℕ) (terms : List (ℕ × Projective.G)) : Projective.G :=
-  toAffine (phornerList (2 ^ c)
+def pippengerProjScatter [DecidableEq F] (c : ℕ) (terms : List (ℕ × SWPoint E)) : SWPoint E :=
+  toAffine E hA hB (phornerList (2 ^ c)
     ((List.range (Msm.numWindows c terms)).map fun i =>
-      pwindowValueFast (2 ^ c) i (terms.map fun t => (t.1, ofAffine t.2))))
+      pwindowValueFast (2 ^ c) i (terms.map fun t => (t.1, ofAffine E t.2))))
 
 /-- **The scatter-bucketed projective Pippenger equals the affine Pippenger** — same transport
 as `pippengerProj_eq`, window values via `pwindowValueFast_spec`. -/
-theorem pippengerProjScatter_eq (c : ℕ) (terms : List (ℕ × Projective.G)) :
-    pippengerProjScatter c terms = Msm.pippenger c terms := by
+theorem pippengerProjScatter_eq [DecidableEq F] (hy0 : ∀ x : F, ¬ OnCurve 0 5 (x, 0))
+    (c : ℕ) (terms : List (ℕ × SWPoint E)) :
+    pippengerProjScatter E hA hB c terms = Msm.pippenger c terms := by
   rw [pippengerProjScatter]
-  set pterms := terms.map (fun t => (t.1, ofAffine t.2)) with hpterms
+  set pterms := terms.map (fun t => (t.1, ofAffine E t.2)) with hpterms
   set windows := (List.range (Msm.numWindows c terms)).map fun i =>
       pwindowValueFast (2 ^ c) i pterms
     with hwin
@@ -389,8 +413,8 @@ theorem pippengerProjScatter_eq (c : ℕ) (terms : List (ℕ × Projective.G)) :
     intro p hp
     rw [hpterms, List.mem_map] at hp
     obtain ⟨t, _, rfl⟩ := hp
-    exact valid_ofAffine t.2
-  have hf : pterms.map (fun t => (t.1, toAffine t.2)) = terms := by
+    exact valid_ofAffine E hA hB t.2
+  have hf : pterms.map (fun t => (t.1, toAffine E hA hB t.2)) = terms := by
     rw [hpterms, List.map_map]
     conv_rhs => rw [← List.map_id terms]
     apply List.map_congr_left
@@ -400,18 +424,19 @@ theorem pippengerProjScatter_eq (c : ℕ) (terms : List (ℕ × Projective.G)) :
     intro P hP
     rw [hwin, List.mem_map] at hP
     obtain ⟨i, _, rfl⟩ := hP
-    exact (pwindowValueFast_spec (2 ^ c) i pterms hval).1
-  rw [(phornerList_spec (2 ^ c) windows hwval).2, Msm.pippenger]
+    exact (pwindowValueFast_spec E hA hB hy0 (2 ^ c) i pterms hval).1
+  rw [(phornerList_spec E hA hB hy0 (2 ^ c) windows hwval).2, Msm.pippenger]
   congr 1
   rw [hwin, List.map_map]
   apply List.map_congr_left
   intro i _
-  rw [Function.comp_apply, (pwindowValueFast_spec (2 ^ c) i pterms hval).2, hf]
+  rw [Function.comp_apply, (pwindowValueFast_spec E hA hB hy0 (2 ^ c) i pterms hval).2, hf]
 
 /-- The scatter-bucketed projective Pippenger equals the naive MSM. -/
-theorem pippengerProjScatter_eq_msm (c : ℕ) (hc : 0 < c) (terms : List (ℕ × Projective.G)) :
-    pippengerProjScatter c terms = (terms.map fun t => t.1 • t.2).sum := by
-  rw [pippengerProjScatter_eq, Msm.pippenger_eq_msm c hc]
+theorem pippengerProjScatter_eq_msm [DecidableEq F] (hy0 : ∀ x : F, ¬ OnCurve 0 5 (x, 0))
+    (c : ℕ) (hc : 0 < c) (terms : List (ℕ × SWPoint E)) :
+    pippengerProjScatter E hA hB c terms = (terms.map fun t => t.1 • t.2).sum := by
+  rw [pippengerProjScatter_eq E hA hB hy0, Msm.pippenger_eq_msm c hc]
 
 /-! ## Windows-parallel projective Pippenger
 
@@ -422,31 +447,32 @@ port. -/
 
 /-- **Windows-parallel scatter-bucketed projective Pippenger**: `pippengerProjScatter` with the
 window values evaluated as parallel tasks. -/
-def pippengerProjScatterPar (c : ℕ) (terms : List (ℕ × Projective.G)) : Projective.G :=
-  toAffine (phornerList (2 ^ c)
+def pippengerProjScatterPar [DecidableEq F] (c : ℕ) (terms : List (ℕ × SWPoint E)) :
+    SWPoint E :=
+  toAffine E hA hB (phornerList (2 ^ c)
     (Msm.parMap (fun i =>
-      pwindowValueFast (2 ^ c) i (terms.map fun t => (t.1, ofAffine t.2)))
+      pwindowValueFast (2 ^ c) i (terms.map fun t => (t.1, ofAffine E t.2)))
       (List.range (Msm.numWindows c terms))))
 
 /-- The windows-parallel projective Pippenger is the sequential one: `parMap` is `map`. -/
-theorem pippengerProjScatterPar_eq (c : ℕ) (terms : List (ℕ × Projective.G)) :
-    pippengerProjScatterPar c terms = pippengerProjScatter c terms := by
+theorem pippengerProjScatterPar_eq [DecidableEq F] (c : ℕ) (terms : List (ℕ × SWPoint E)) :
+    pippengerProjScatterPar E hA hB c terms = pippengerProjScatter E hA hB c terms := by
   rw [pippengerProjScatterPar, Msm.parMap_eq_map, pippengerProjScatter]
 
 /-- The windows-parallel projective Pippenger equals the naive MSM. -/
-theorem pippengerProjScatterPar_eq_msm (c : ℕ) (hc : 0 < c)
-    (terms : List (ℕ × Projective.G)) :
-    pippengerProjScatterPar c terms = (terms.map fun t => t.1 • t.2).sum := by
-  rw [pippengerProjScatterPar_eq, pippengerProjScatter_eq_msm c hc]
+theorem pippengerProjScatterPar_eq_msm [DecidableEq F] (hy0 : ∀ x : F, ¬ OnCurve 0 5 (x, 0))
+    (c : ℕ) (hc : 0 < c) (terms : List (ℕ × SWPoint E)) :
+    pippengerProjScatterPar E hA hB c terms = (terms.map fun t => t.1 • t.2).sum := by
+  rw [pippengerProjScatterPar_eq, pippengerProjScatter_eq_msm E hA hB hy0 c hc]
 
-/-! ## The `commit_lagrange` wrapper -/
+/-! ## The `commit_lagrange` wrapper (Vesta) -/
 
 /-- The fast `commit_lagrange` run in projective coordinates: projective windowed Pippenger over the
 `(coeffᵢ.val, basisᵢ)` terms (single final inversion), plus the blind.  The terms are zipped
 identically to `Fast.Msm.commitLagrangeFastWith` so the wrapper equality reuses `zip_terms_eq`. -/
 def commitLagrangeProjWith (c : ℕ) (blind : Projective.G) (basis : List Projective.G)
     (coeffs : List Fp) : Projective.G :=
-  pippengerProj c
+  pippengerProj Vesta.curve rfl rfl c
     ((coeffs.zip (basis ++ List.replicate (coeffs.length - basis.length) 0)).map
       fun t => (t.1.val, t.2)) + blind
 
@@ -456,7 +482,8 @@ theorem commitLagrangeProjWith_eq (c : ℕ) (hc : 0 < c)
     (blind : Projective.G) (basis : List Projective.G) (coeffs : List Fp) :
     commitLagrangeProjWith c blind basis coeffs = Msm.commitLagrangeSpec blind basis coeffs := by
   unfold commitLagrangeProjWith Msm.commitLagrangeSpec
-  rw [pippengerProj_eq, Msm.zip_terms_eq, Msm.pippenger_eq_msm c hc, List.map_map]
+  rw [pippengerProj_eq Vesta.curve rfl rfl Vesta.no_onCurve_y_zero, Msm.zip_terms_eq,
+    Msm.pippenger_eq_msm c hc, List.map_map]
   rfl
 
 /-- The fast `commit_lagrange` with scatter-bucketed projective Pippenger — the drop-in
@@ -464,7 +491,7 @@ committer for the certificate's per-column pass (serial per column; the 44-colum
 `parMap` already saturates the cores). -/
 def commitLagrangeProjScatterWith (c : ℕ) (blind : Projective.G) (basis : List Projective.G)
     (coeffs : List Fp) : Projective.G :=
-  pippengerProjScatter c
+  pippengerProjScatter Vesta.curve rfl rfl c
     ((coeffs.zip (basis ++ List.replicate (coeffs.length - basis.length) 0)).map
       fun t => (t.1.val, t.2)) + blind
 
@@ -475,7 +502,8 @@ theorem commitLagrangeProjScatterWith_eq (c : ℕ) (hc : 0 < c)
     commitLagrangeProjScatterWith c blind basis coeffs
       = Msm.commitLagrangeSpec blind basis coeffs := by
   unfold commitLagrangeProjScatterWith Msm.commitLagrangeSpec
-  rw [pippengerProjScatter_eq, Msm.zip_terms_eq, Msm.pippenger_eq_msm c hc, List.map_map]
+  rw [pippengerProjScatter_eq Vesta.curve rfl rfl Vesta.no_onCurve_y_zero, Msm.zip_terms_eq,
+    Msm.pippenger_eq_msm c hc, List.map_map]
   rfl
 
 end CompElliptic.Curves.Pasta.Fast.MsmProj

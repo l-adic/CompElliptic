@@ -152,13 +152,13 @@ theorem montVal_c225 : montVal PM.c225 = 225 := by
 /-! ## The point level -/
 
 /-- Coordinatewise interpretation of a Montgomery triple as a projective point over `𝔽_q`. -/
-def toPVesM (p : PM) : PVes := ⟨montVal p.X, montVal p.Y, montVal p.Z⟩
+def toPVesM (p : PM) : PVes Fq := ⟨montVal p.X, montVal p.Y, montVal p.Z⟩
 
 /-- All three coordinates are well-formed Montgomery residues. -/
 def WFP (p : PM) : Prop := WF p.X ∧ WF p.Y ∧ WF p.Z
 
 /-- The affine reading of a Montgomery triple. -/
-def toGM (p : PM) : G := toAffine (toPVesM p)
+def toGM (p : PM) : G := toAffine Vesta.curve rfl rfl (toPVesM p)
 
 @[simp] theorem toPVesM_X (p : PM) : (toPVesM p).X = montVal p.X := rfl
 @[simp] theorem toPVesM_Y (p : PM) : (toPVesM p).Y = montVal p.Y := rfl
@@ -228,15 +228,17 @@ def WV (p : PM) : Prop := WFP p ∧ Valid (toPVesM p)
 theorem WV_pid : WV PM.pid := ⟨wfp_pid, by rw [toPVesM_pid]; exact valid_pid⟩
 
 theorem WV_padd {p r : PM} (hp : WV p) (hr : WV r) : WV (PM.padd p r) :=
-  ⟨wfp_padd hp.1 hr.1, by rw [toPVesM_padd hp.1 hr.1]; exact valid_padd hp.2 hr.2⟩
+  ⟨wfp_padd hp.1 hr.1, by
+    rw [toPVesM_padd hp.1 hr.1]; exact valid_padd Vesta.no_onCurve_y_zero hp.2 hr.2⟩
 
-@[simp] theorem toGM_pid : toGM PM.pid = 0 := by rw [toGM, toPVesM_pid, toAffine_pid]
+@[simp] theorem toGM_pid : toGM PM.pid = 0 := by
+  rw [toGM, toPVesM_pid, toAffine_pid Vesta.curve rfl rfl]
 
 /-- **The kernel's addition is the affine group addition** on representable points. -/
 theorem toGM_padd {p r : PM} (hp : WV p) (hr : WV r) :
     toGM (PM.padd p r) = toGM p + toGM r := by
   simp only [toGM]
-  rw [toPVesM_padd hp.1 hr.1, toAffine_padd hp.2 hr.2]
+  rw [toPVesM_padd hp.1 hr.1, toAffine_padd Vesta.curve rfl rfl Vesta.no_onCurve_y_zero hp.2 hr.2]
 
 /-! ## The correspondence with the projective statement surface
 
@@ -245,27 +247,28 @@ shared schedule preserves it. -/
 
 /-- The kernel correspondence: a well-formed Montgomery triple denoting a given projective
 point. -/
-def RM (p : PM) (P : PVes) : Prop := WFP p ∧ toPVesM p = P
+def RM (p : PM) (P : PVes Fq) : Prop := WFP p ∧ toPVesM p = P
 
 /-- The correspondence on ladder/downsweep state pairs. -/
-def RM2 (s : PM × PM) (s' : PVes × PVes) : Prop := RM s.1 s'.1 ∧ RM s.2 s'.2
+def RM2 (s : PM × PM) (s' : PVes Fq × PVes Fq) : Prop := RM s.1 s'.1 ∧ RM s.2 s'.2
 
 theorem RM_self {p : PM} (h : WFP p) : RM p (toPVesM p) := ⟨h, rfl⟩
 
-theorem RM_toG {p : PM} {P : PVes} (h : RM p P) : toGM p = toAffine P := by rw [toGM, h.2]
+theorem RM_toG {p : PM} {P : PVes Fq} (h : RM p P) : toGM p = toAffine Vesta.curve rfl rfl P := by
+  rw [toGM, h.2]
 
 /-- A corresponding pair inherits representability from the projective side. -/
-theorem RM_valid {p : PM} {P : PVes} (h : RM p P) (hv : Valid P) : WV p :=
+theorem RM_valid {p : PM} {P : PVes Fq} (h : RM p P) (hv : Valid P) : WV p :=
   ⟨h.1, by rw [h.2]; exact hv⟩
 
-theorem RM_padd {p r : PM} {P Q : PVes} (hp : RM p P) (hr : RM r Q) :
+theorem RM_padd {p r : PM} {P Q : PVes Fq} (hp : RM p P) (hr : RM r Q) :
     RM (PM.padd p r) (PVes.padd P Q) := by
   refine ⟨wfp_padd hp.1 hr.1, ?_⟩
   rw [toPVesM_padd hp.1 hr.1, hp.2, hr.2]
 
 theorem RM_pid : RM PM.pid PVes.pid := ⟨wfp_pid, toPVesM_pid⟩
 
-theorem RM_pneg {p : PM} {P : PVes} (h : RM p P) :
+theorem RM_pneg {p : PM} {P : PVes Fq} (h : RM p P) :
     RM (PM.pneg p) ⟨P.X, -P.Y, P.Z⟩ := by
   refine ⟨wfp_pneg h.1, ?_⟩
   rw [toPVesM_pneg h.1, h.2]
@@ -336,7 +339,8 @@ private theorem ladderM_step {A : G} {n i : ℕ} {st : PM × PM} (h : LadderInvM
 (all Pasta scalars).  Statement shape mirrors `PVes.pnsmulFast_spec`. -/
 theorem pnsmulM_spec {p : PM} (hwf : WFP p) (hp : Valid (toPVesM p)) (n : ℕ) (hn : n < 2 ^ 256) :
     WFP (PM.pnsmul n p) ∧ Valid (toPVesM (PM.pnsmul n p)) ∧
-      toAffine (toPVesM (PM.pnsmul n p)) = n • toAffine (toPVesM p) := by
+      toAffine Vesta.curve rfl rfl (toPVesM (PM.pnsmul n p))
+        = n • toAffine Vesta.curve rfl rfl (toPVesM p) := by
   have base : ∀ m : ℕ, m ≤ 256 →
       LadderInvM (toGM p) n m ((List.range m).foldl
         (fun (st : PM × PM) i =>
@@ -420,16 +424,16 @@ private theorem forall₂_map_self {α β : Type} {R : α → β → Prop} {P : 
 
 /-- `Array.get!`/`set!` need a default on the `PVes` side as well as on `PM`'s; the projective
 identity is the right one on both, so an out-of-range read stays a corresponding pair. -/
-instance : Inhabited PVes := ⟨PVes.pid⟩
+instance : Inhabited (PVes Fq) := ⟨PVes.pid⟩
 
 /-- The array-level correspondence: cellwise `RM`. -/
-def RA (a : Array PM) (b : Array PVes) : Prop := List.Forall₂ RM a.toList b.toList
+def RA (a : Array PM) (b : Array (PVes Fq)) : Prop := List.Forall₂ RM a.toList b.toList
 
-theorem RA.size {a : Array PM} {b : Array PVes} (h : RA a b) : a.size = b.size := by
+theorem RA.size {a : Array PM} {b : Array (PVes Fq)} (h : RA a b) : a.size = b.size := by
   have := List.Forall₂.length_eq h
   rwa [Array.length_toList, Array.length_toList] at this
 
-theorem RA.get {a : Array PM} {b : Array PVes} (h : RA a b) (k : ℕ) : RM a[k]! b[k]! := by
+theorem RA.get {a : Array PM} {b : Array (PVes Fq)} (h : RA a b) (k : ℕ) : RM a[k]! b[k]! := by
   by_cases hk : k < a.size
   · have hk' : k < b.size := h.size ▸ hk
     rw [getElem!_pos a k hk, getElem!_pos b k hk']
@@ -439,20 +443,21 @@ theorem RA.get {a : Array PM} {b : Array PVes} (h : RA a b) (k : ℕ) : RM a[k]!
     rw [getElem!_neg a k hk, getElem!_neg b k hk']
     exact RM_pid
 
-theorem RA.set {a : Array PM} {b : Array PVes} (h : RA a b) (k : ℕ) {p : PM} {P : PVes}
+theorem RA.set {a : Array PM} {b : Array (PVes Fq)} (h : RA a b) (k : ℕ) {p : PM} {P : PVes Fq}
     (hp : RM p P) : RA (a.set! k p) (b.set! k P) := by
   simp only [RA, Array.set!_eq_setIfInBounds, Array.toList_setIfInBounds]
   exact forall₂_set hp h k
 
-theorem RA.modify {a : Array PM} {b : Array PVes} (h : RA a b) (k : ℕ)
-    {f : PM → PM} {g : PVes → PVes} (hfg : ∀ p P, RM p P → RM (f p) (g P)) :
+theorem RA.modify {a : Array PM} {b : Array (PVes Fq)} (h : RA a b) (k : ℕ)
+    {f : PM → PM} {g : PVes Fq → PVes Fq} (hfg : ∀ p P, RM p P → RM (f p) (g P)) :
     RA (a.modify k f) (b.modify k g) := by
   simp only [RA, Array.toList_modify]
   exact forall₂_modify hfg h k
 
-theorem RA.map_toG {a : Array PM} {b : Array PVes} (h : RA a b) :
-    a.map toGM = b.map toAffine := by
-  have := forall₂_map_eq (f := toGM) (g := toAffine) (fun _ _ hr => RM_toG hr) h
+theorem RA.map_toG {a : Array PM} {b : Array (PVes Fq)} (h : RA a b) :
+    a.map toGM = b.map (toAffine Vesta.curve rfl rfl) := by
+  have := forall₂_map_eq (f := toGM) (g := toAffine Vesta.curve rfl rfl)
+    (fun _ _ hr => RM_toG hr) h
   rw [← Array.toList_map, ← Array.toList_map] at this
   exact Array.toList_inj.mp this
 
@@ -469,7 +474,7 @@ instead of `pnsmulFast (2 ^ c)`), so it goes through `toGM` directly, and
 `hornerList_windows_eq_msm` reconciles the kernel's fixed `⌈256 / c⌉` windows with
 `Msm.numWindows`. -/
 
-private theorem RA_scatterStep {a : Array PM} {b : Array PVes} (h : RA a b) {t : ℕ × PM}
+private theorem RA_scatterStep {a : Array PM} {b : Array (PVes Fq)} (h : RA a b) {t : ℕ × PM}
     (ht : WFP t.2) :
     RA (PM.scatterStep a t) (MsmProj.pscatterStep b (t.1, toPVesM t.2)) := by
   simp only [PM.scatterStep, MsmProj.pscatterStep]
@@ -489,7 +494,7 @@ private theorem RA_bucketScatter (base : ℕ) (dp : List (ℕ × PM)) (h : ∀ t
   exact forall₂_replicate RM_pid _
 
 private theorem RM2_foldr_accStep :
-    ∀ {L : List PM} {L' : List PVes}, List.Forall₂ RM L L' →
+    ∀ {L : List PM} {L' : List (PVes Fq)}, List.Forall₂ RM L L' →
       RM2 (L.foldr PM.accStep (PM.pid, PM.pid))
         (L'.foldr MsmProj.paccStep (PVes.pid, PVes.pid)) := by
   intro L L' h
@@ -583,17 +588,17 @@ mirrors `MsmProj.pippengerProjScatter_eq`. -/
 theorem msmM_spec (c : ℕ) (hc : 0 < c) (terms : List (ℕ × PM))
     (hwf : ∀ t ∈ terms, WFP t.2) (hv : ∀ t ∈ terms, Valid (toPVesM t.2))
     (hn : ∀ t ∈ terms, t.1 < 2 ^ 256) :
-    toAffine (toPVesM (PM.msm c terms))
-      = Msm.pippenger c (terms.map fun t => (t.1, toAffine (toPVesM t.2))) := by
+    toAffine Vesta.curve rfl rfl (toPVesM (PM.msm c terms))
+      = Msm.pippenger c (terms.map fun t => (t.1, toAffine Vesta.curve rfl rfl (toPVesM t.2))) := by
   set W := (256 + c - 1) / c with hWdef
   set pterms := terms.map fun t => (t.1, toPVesM t.2) with hpterms
-  set aterms := terms.map fun t => (t.1, toAffine (toPVesM t.2)) with haterms
+  set aterms := terms.map fun t => (t.1, toAffine Vesta.curve rfl rfl (toPVesM t.2)) with haterms
   have hptv : ∀ p ∈ pterms, Valid p.2 := by
     intro p hp
     rw [hpterms, List.mem_map] at hp
     obtain ⟨t, ht, rfl⟩ := hp
     exact hv t ht
-  have hmapaff : pterms.map (fun t => (t.1, toAffine t.2)) = aterms := by
+  have hmapaff : pterms.map (fun t => (t.1, toAffine Vesta.curve rfl rfl t.2)) = aterms := by
     rw [hpterms, haterms, List.map_map]
     rfl
   -- each window value: well formed, representable, and affinely the `Msm` window value
@@ -602,7 +607,8 @@ theorem msmM_spec (c : ℕ) (hc : 0 < c) (terms : List (ℕ × PM))
     intro i
     have hR := RM_windowValue (2 ^ c) i terms hwf
     rw [← hpterms] at hR
-    obtain ⟨hvw, hew⟩ := MsmProj.pwindowValueFast_spec (2 ^ c) i pterms hptv
+    obtain ⟨hvw, hew⟩ := MsmProj.pwindowValueFast_spec Vesta.curve rfl rfl
+      Vesta.no_onCurve_y_zero (2 ^ c) i pterms hptv
     exact ⟨RM_valid hR hvw, by rw [RM_toG hR, hew, hmapaff]⟩
   have hvals : ∀ v ∈ (List.range W).map (fun i => PM.windowValue (2 ^ c) i terms), WV v := by
     intro v hvm
