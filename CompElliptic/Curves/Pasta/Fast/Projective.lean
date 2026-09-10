@@ -219,4 +219,118 @@ theorem padd_eq_paddFast : @padd = @paddFast := by
     simp only [cast_fadd, cast_fmul, cast_fsub, cast_val, Nat.cast_ofNat] <;> ring
 
 end PVes
+
+/-! # The Pallas instantiation
+
+The Pallas analogue of the Vesta block above: `PPal` is `Core.PPoint 𝔽_p`, and every operation and
+lemma is the generic core specialized at the Pallas base field and curve. The completeness
+hypotheses are discharged once here — no 2-torsion (`Pallas.no_onCurve_y_zero`), `2 ≠ 0`, `5 ≠ 0`,
+and the coefficients `Pallas.curve.A = 0`, `Pallas.curve.B = 5`. No `paddFast` here: the raw-`ℕ`
+compiled spelling is Vesta-only. -/
+
+namespace Pallas
+
+/-- The Pallas base field `𝔽_p`, over which the Pallas curve is defined. -/
+abbrev Fp := CompElliptic.Fields.Pasta.PallasBaseField
+
+/-- The downstream affine group: on-curve points of Pallas with the complete affine group law. -/
+abbrev G := SWPoint Pallas.curve
+
+/-- A projective point in `(X : Y : Z)` coordinates over `𝔽_p`, from the generic core. -/
+abbrev PPal := Core.PPoint Fp
+
+/-! ## The Pallas curve facts feeding the generic core -/
+
+/-- Pallas's curve coefficient `A = 0`. -/
+theorem hA : Pallas.curve.A = 0 := rfl
+
+/-- Pallas's curve coefficient `B = 5`. -/
+theorem hB : Pallas.curve.B = 5 := rfl
+
+/-- `2 ≠ 0` in the Pallas base field. -/
+theorem htwo : (2 : Fp) ≠ 0 := by decide
+
+/-- `5 ≠ 0` in the Pallas base field. -/
+theorem hfive : (5 : Fp) ≠ 0 := by decide
+
+/-- Pallas has no 2-torsion: no curve point with `y = 0` (`Pallas.no_onCurve_y_zero`). -/
+theorem hy0 : ∀ x : Fp, ¬ OnCurve 0 5 (x, 0) := Pallas.no_onCurve_y_zero
+
+/-! ## Operations, specialized from the core -/
+
+/-- Renes–Costello–Batina complete addition, at Pallas. -/
+abbrev padd : PPal → PPal → PPal := Core.PPoint.padd
+
+/-- Scalar (representative) rescaling, at Pallas. -/
+abbrev smul : Fp → PPal → PPal := Core.PPoint.smul
+
+/-- The projective identity `𝒪 = (0 : 1 : 0)`. -/
+abbrev pid : PPal := Core.PPoint.pid
+
+/-- The homogeneous projective curve equation, at Pallas. -/
+abbrev OnCurveP : PPal → Prop := Core.PPoint.OnCurveP
+
+/-- A representable projective point: on the projective curve and not the zero vector. -/
+abbrev Valid : PPal → Prop := Core.PPoint.Valid
+
+/-- Affine interpretation as a raw coordinate pair. -/
+abbrev aff : PPal → Fp × Fp := Core.PPoint.aff
+
+/-- Interpret a projective point as an element of the affine group `G`. -/
+abbrev toAffine : PPal → G := Core.PPoint.toAffine Pallas.curve hA hB
+
+/-- Materialize an affine group element as a projective representative. -/
+abbrev ofAffine : G → PPal := Core.PPoint.ofAffine Pallas.curve
+
+/-- Binary double-and-add scalar multiplication over `PPal`. -/
+abbrev pnsmulFast : ℕ → PPal → PPal := Core.PPoint.pnsmulFast
+
+/-- The packaged fast scalar multiplication on `G`, through projective coordinates. -/
+abbrev smulFast : ℕ → G → G := Core.PPoint.smulFast Pallas.curve hA hB
+
+/-! ## Lemmas, specialized from the core -/
+
+/-- The identity `(0 : 1 : 0)` is valid. -/
+theorem valid_pid : Valid pid := Core.PPoint.valid_pid
+
+/-- Validity is preserved by `padd` (closure). -/
+theorem valid_padd {P Q : PPal} (hP : Valid P) (hQ : Valid Q) : Valid (padd P Q) :=
+  Core.PPoint.valid_padd hy0 htwo hP hQ
+
+/-- `aff` is a homomorphism from `padd` to the affine group law on valid inputs. -/
+theorem aff_padd {P Q : PPal} (hP : Valid P) (hQ : Valid Q) :
+    aff (padd P Q) = add 0 (aff P) (aff Q) :=
+  Core.PPoint.aff_padd hy0 htwo hP hQ
+
+/-- **General equivalence.** The RCB sum interprets affinely as the complete affine sum, and
+stays valid. -/
+theorem padd_spec {P Q : PPal} (hP : Valid P) (hQ : Valid Q) :
+    aff (padd P Q) = add 0 (aff P) (aff Q) ∧ Valid (padd P Q) :=
+  Core.PPoint.padd_spec hy0 htwo hP hQ
+
+@[simp] theorem toAffine_pid : toAffine pid = 0 := Core.PPoint.toAffine_pid Pallas.curve hA hB
+
+/-- **The homomorphism.** `toAffine` carries the projective RCB addition to the affine group law. -/
+theorem toAffine_padd {P Q : PPal} (hP : Valid P) (hQ : Valid Q) :
+    toAffine (padd P Q) = toAffine P + toAffine Q :=
+  Core.PPoint.toAffine_padd Pallas.curve hA hB hy0 htwo hP hQ
+
+/-- Every affine group element materializes to a valid projective representative. -/
+theorem valid_ofAffine (p : G) : Valid (ofAffine p) :=
+  Core.PPoint.valid_ofAffine Pallas.curve hA hB p
+
+/-- `toAffine` is a left inverse of `ofAffine`. -/
+theorem toAffine_ofAffine (p : G) : toAffine (ofAffine p) = p :=
+  Core.PPoint.toAffine_ofAffine Pallas.curve hA hB p
+
+/-- **Fast scalar multiplication is the genuine group action**, projectively. -/
+theorem pnsmulFast_spec {P : PPal} (hP : Valid P) : ∀ n : ℕ,
+    Valid (pnsmulFast n P) ∧ toAffine (pnsmulFast n P) = n • toAffine P :=
+  Core.PPoint.pnsmulFast_spec Pallas.curve hA hB hy0 htwo hP
+
+/-- **Correctness of `smulFast`:** it equals the affine scalar multiplication `n • p`. -/
+theorem smulFast_eq (n : ℕ) (p : G) : smulFast n p = n • p :=
+  Core.PPoint.smulFast_eq Pallas.curve hA hB hy0 htwo n p
+
+end Pallas
 end CompElliptic.Curves.Pasta.Fast.Projective
