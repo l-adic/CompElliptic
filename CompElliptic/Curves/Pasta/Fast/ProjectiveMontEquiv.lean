@@ -472,7 +472,7 @@ instead of `pnsmulFast (2 ^ c)`), so it goes through `toGM` directly, and
 private theorem RA_scatterStep {a : Array PM} {b : Array PVes} (h : RA a b) {t : ℕ × PM}
     (ht : WFP t.2) :
     RA (PM.scatterStep a t) (MsmProj.pscatterStep b (t.1, toPVesM t.2)) := by
-  simp only [PM.scatterStep, MsmProj.pscatterStep]
+  simp only [PM.scatterStep, MsmProj.pscatterStep, MsmProj.Core.pscatterStep]
   by_cases h0 : t.1 = 0
   · rw [if_pos h0, if_pos h0]
     exact h
@@ -482,7 +482,7 @@ private theorem RA_scatterStep {a : Array PM} {b : Array PVes} (h : RA a b) {t :
 private theorem RA_bucketScatter (base : ℕ) (dp : List (ℕ × PM)) (h : ∀ t ∈ dp, WFP t.2) :
     RA (PM.bucketScatter base dp)
       (MsmProj.pbucketScatter base (dp.map fun t => (t.1, toPVesM t.2))) := by
-  simp only [PM.bucketScatter, MsmProj.pbucketScatter, List.foldl_map]
+  simp only [PM.bucketScatter, MsmProj.pbucketScatter, MsmProj.Core.pbucketScatter, List.foldl_map]
   refine foldl_rel₂ RA (fun t : ℕ × PM => WFP t.2) dp _ _
     (fun s s' x hx hs => RA_scatterStep (t := x) hs hx) h _ _ ?_
   simp only [RA, Array.toList_replicate]
@@ -512,7 +512,7 @@ private theorem RM_windowValue (base i : ℕ) (terms : List (ℕ × PM))
   have halign : (terms.map fun t : ℕ × PM => (t.1 / base ^ i % base, t.2)).map
         (fun t : ℕ × PM => (t.1, toPVesM t.2))
       = MsmProj.pdpOf base i (terms.map fun t : ℕ × PM => (t.1, toPVesM t.2)) := by
-    simp only [MsmProj.pdpOf, Msm.digit, List.map_map, Function.comp_def]
+    simp only [MsmProj.pdpOf, MsmProj.Core.pdpOf, Msm.digit, List.map_map, Function.comp_def]
   rw [halign] at hb
   exact (RM2_foldr_accStep hb).2
 
