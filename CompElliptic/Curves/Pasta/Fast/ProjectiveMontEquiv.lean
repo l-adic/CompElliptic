@@ -607,7 +607,8 @@ theorem msmM_spec (c : ℕ) (hc : 0 < c) (terms : List (ℕ × PM))
     intro i
     have hR := RM_windowValue (2 ^ c) i terms hwf
     rw [← hpterms] at hR
-    obtain ⟨hvw, hew⟩ := MsmProj.pwindowValueFast_spec (2 ^ c) i pterms hptv
+    obtain ⟨hvw, hew⟩ := MsmProj.pwindowValueFast_spec Vesta.curve rfl rfl
+      Vesta.no_onCurve_y_zero (2 ^ c) i pterms hptv
     exact ⟨RM_valid hR hvw, by rw [RM_toG hR, hew, hmapaff]⟩
   have hvals : ∀ v ∈ (List.range W).map (fun i => PM.windowValue (2 ^ c) i terms), WV v := by
     intro v hvm
