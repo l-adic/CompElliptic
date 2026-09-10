@@ -198,7 +198,7 @@ theorem toPVesM_padd {p r : PM} (hp : WFP p) (hr : WFP r) :
     toPVesM (PM.padd p r) = PVes.padd (toPVesM p) (toPVesM r) := by
   obtain ⟨hpx, hpy, hpz⟩ := hp
   obtain ⟨hrx, hry, hrz⟩ := hr
-  simp only [toPVesM, PM.padd, PVes.padd, PVes.mk.injEq]
+  simp only [toPVesM, PM.padd, PVes.padd, Core.PPoint.padd, Core.PPoint.mk.injEq]
   refine ⟨?_, ?_, ?_⟩ <;>
     simp (maxDischargeDepth := 16) only [montVal_add, montVal_sub, montVal_mul, montVal_square,
       montVal_c3, montVal_c15, montVal_c30, montVal_c45, montVal_c225,
@@ -207,7 +207,7 @@ theorem toPVesM_padd {p r : PM} (hp : WFP p) (hr : WFP r) :
     ring
 
 @[simp] theorem toPVesM_pid : toPVesM PM.pid = PVes.pid := by
-  simp only [toPVesM, PM.pid, PVes.pid, PVes.mk.injEq]
+  simp only [toPVesM, PM.pid, PVes.pid, Core.PPoint.pid, Core.PPoint.mk.injEq]
   exact ⟨montVal_zero, montVal_one, montVal_zero⟩
 
 /-- **The kernel's negation is coordinate negation of `Y`**, the short-Weierstrass inverse. -/
@@ -472,7 +472,7 @@ instead of `pnsmulFast (2 ^ c)`), so it goes through `toGM` directly, and
 private theorem RA_scatterStep {a : Array PM} {b : Array PVes} (h : RA a b) {t : ℕ × PM}
     (ht : WFP t.2) :
     RA (PM.scatterStep a t) (MsmProj.pscatterStep b (t.1, toPVesM t.2)) := by
-  simp only [PM.scatterStep, MsmProj.pscatterStep]
+  simp only [PM.scatterStep, MsmProj.pscatterStep, MsmProj.Core.pscatterStep]
   by_cases h0 : t.1 = 0
   · rw [if_pos h0, if_pos h0]
     exact h
@@ -482,7 +482,7 @@ private theorem RA_scatterStep {a : Array PM} {b : Array PVes} (h : RA a b) {t :
 private theorem RA_bucketScatter (base : ℕ) (dp : List (ℕ × PM)) (h : ∀ t ∈ dp, WFP t.2) :
     RA (PM.bucketScatter base dp)
       (MsmProj.pbucketScatter base (dp.map fun t => (t.1, toPVesM t.2))) := by
-  simp only [PM.bucketScatter, MsmProj.pbucketScatter, List.foldl_map]
+  simp only [PM.bucketScatter, MsmProj.pbucketScatter, MsmProj.Core.pbucketScatter, List.foldl_map]
   refine foldl_rel₂ RA (fun t : ℕ × PM => WFP t.2) dp _ _
     (fun s s' x hx hs => RA_scatterStep (t := x) hs hx) h _ _ ?_
   simp only [RA, Array.toList_replicate]
@@ -512,7 +512,7 @@ private theorem RM_windowValue (base i : ℕ) (terms : List (ℕ × PM))
   have halign : (terms.map fun t : ℕ × PM => (t.1 / base ^ i % base, t.2)).map
         (fun t : ℕ × PM => (t.1, toPVesM t.2))
       = MsmProj.pdpOf base i (terms.map fun t : ℕ × PM => (t.1, toPVesM t.2)) := by
-    simp only [MsmProj.pdpOf, Msm.digit, List.map_map, Function.comp_def]
+    simp only [MsmProj.pdpOf, MsmProj.Core.pdpOf, Msm.digit, List.map_map, Function.comp_def]
   rw [halign] at hb
   exact (RM2_foldr_accStep hb).2
 
