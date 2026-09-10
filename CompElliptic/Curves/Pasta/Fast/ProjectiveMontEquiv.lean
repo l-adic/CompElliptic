@@ -198,7 +198,7 @@ theorem toPVesM_padd {p r : PM} (hp : WFP p) (hr : WFP r) :
     toPVesM (PM.padd p r) = PVes.padd (toPVesM p) (toPVesM r) := by
   obtain ⟨hpx, hpy, hpz⟩ := hp
   obtain ⟨hrx, hry, hrz⟩ := hr
-  simp only [toPVesM, PM.padd, PVes.padd, PVes.mk.injEq]
+  simp only [toPVesM, PM.padd, PVes.padd, Core.PPoint.padd, Core.PPoint.mk.injEq]
   refine ⟨?_, ?_, ?_⟩ <;>
     simp (maxDischargeDepth := 16) only [montVal_add, montVal_sub, montVal_mul, montVal_square,
       montVal_c3, montVal_c15, montVal_c30, montVal_c45, montVal_c225,
@@ -207,7 +207,7 @@ theorem toPVesM_padd {p r : PM} (hp : WFP p) (hr : WFP r) :
     ring
 
 @[simp] theorem toPVesM_pid : toPVesM PM.pid = PVes.pid := by
-  simp only [toPVesM, PM.pid, PVes.pid, PVes.mk.injEq]
+  simp only [toPVesM, PM.pid, PVes.pid, Core.PPoint.pid, Core.PPoint.mk.injEq]
   exact ⟨montVal_zero, montVal_one, montVal_zero⟩
 
 /-- **The kernel's negation is coordinate negation of `Y`**, the short-Weierstrass inverse. -/

@@ -49,7 +49,7 @@ theorem psum_cons (a : PVes) (xs : List PVes) : psum (a :: xs) = padd a (psum xs
 theorem psum_spec (L : List PVes) (h : ∀ P ∈ L, Valid P) :
     Valid (psum L) ∧ toAffine (psum L) = (L.map toAffine).sum := by
   induction L with
-  | nil => exact ⟨valid_pid, by simp [psum, toAffine_pid]⟩
+  | nil => exact ⟨valid_pid, by simp [psum]⟩
   | cons a xs ih =>
     have ha : Valid a := h a (by simp)
     have hxs : ∀ P ∈ xs, Valid P := fun P hP => h P (by simp [hP])
@@ -95,7 +95,7 @@ theorem foldr_paccStep_spec (L : List PVes) (h : ∀ P ∈ L, Valid P) :
       ∧ (toAffine (L.foldr paccStep (pid, pid)).1, toAffine (L.foldr paccStep (pid, pid)).2)
         = List.foldr Msm.accStep ((0 : Projective.G), (0 : Projective.G)) (L.map toAffine) := by
   induction L with
-  | nil => exact ⟨valid_pid, valid_pid, by simp [toAffine_pid]⟩
+  | nil => exact ⟨valid_pid, valid_pid, by simp⟩
   | cons a xs ih =>
     have ha : Valid a := h a (by simp)
     have hxs : ∀ P ∈ xs, Valid P := fun P hP => h P (by simp [hP])
@@ -166,7 +166,7 @@ theorem phornerList_spec (base : ℕ) (vals : List PVes) (h : ∀ P ∈ vals, Va
     Valid (phornerList base vals)
       ∧ toAffine (phornerList base vals) = Msm.hornerList base (vals.map toAffine) := by
   induction vals with
-  | nil => exact ⟨valid_pid, by simp [phornerList, Msm.hornerList, toAffine_pid]⟩
+  | nil => exact ⟨valid_pid, by simp [phornerList, Msm.hornerList]⟩
   | cons v xs ih =>
     have hv : Valid v := h v (by simp)
     have hxs : ∀ P ∈ xs, Valid P := fun P hP => h P (by simp [hP])
