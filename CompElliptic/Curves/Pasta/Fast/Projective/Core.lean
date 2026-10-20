@@ -223,7 +223,7 @@ theorem aff_smul [DecidableEq F] (u : F) (hu : u ≠ 0) (P : PPoint F) : aff (sm
   rcases eq_or_ne P.Z 0 with h | h
   · simp [aff, smul, h]
   · have huz : u * P.Z ≠ 0 := mul_ne_zero hu h
-    simp only [aff, smul, if_neg h, if_neg huz]
+    simp only [aff, smul, h, huz, ↓reduceIte]
     rw [Prod.mk.injEq]
     exact ⟨mul_div_mul_left _ _ hu, mul_div_mul_left _ _ hu⟩
 
