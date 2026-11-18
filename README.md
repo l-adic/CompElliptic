@@ -142,11 +142,10 @@ Early work in progress. Present so far:
   provisional: they are not guaranteed to remain public, and may be folded into the existing API
   or otherwise changed incompatibly.
 
-The library's general theorems depend only on the standard `propext` / `Classical.choice` /
-`Quot.sound` axioms. Facts specific to concrete fields and curves additionally depend on
-`native_decide`'s per-declaration compiler-trust axiom, confined —per the *Independently
-re-checkable trust* principle— to checks the kernel cannot feasibly run (chiefly the order of
-the Tonelli–Shanks roots of unity). The tier of each is pinned in `CompElliptic/TrustBoundary.lean`.
+The library's general theorems use the standard `propext`, `Classical.choice` and `Quot.sound`
+axioms. The kernel checks the Pasta Tonelli–Shanks root orders and the Pallas and Vesta
+prime-order witnesses. The iso-curve order witnesses still use `native_decide`.
+`CompElliptic/TrustBoundary.lean` records the trusted assumptions for each audited declaration.
 
 Uses of `sorry` are kept minimal and limited to work-in-progress. As stated above under
 "Trust discipline", there are currently no uses of `@[csimp]` replacement.

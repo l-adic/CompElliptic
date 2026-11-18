@@ -25,16 +25,12 @@ passing silently. The declarations are grouped by trust tier:
 
 * **General theorems** rest only on `propext` / `Classical.choice` / `Quot.sound`. A quantified
   result has no independent spot-check, so it must not reach beyond Lean's standard axioms.
-* **Concrete closed facts checked by the kernel** (Pratt primality certificates) add nothing beyond
-  those same axioms: the kernel evaluates them directly, trusting only its GMP bignum arithmetic
-  (which even ordinary `decide` relies on and which axiom collection does not surface).
+* **Concrete closed facts checked by the kernel** (primality, roots of unity and the Pasta
+  generator-order witnesses) add nothing beyond those same axioms. The kernel evaluates them
+  directly using its GMP bignum arithmetic.
 * **Concrete closed facts trusting the compiler** (`native_decide`, marked `+native(...)`) each add
-  a per-declaration compiler-trust axiom. This is the whole compiler-trust surface, confined to
-  falsifiable numeric facts about the Pasta fields and curves — chiefly the order of the
-  Tonelli–Shanks roots of unity (`pallasBase`/`vestaBase`) and the two prime-order witnesses behind
-  the group orders. Each such fact is reproducible by an independent tool, so a miscompiled oracle
-  could in principle be caught by disagreement (the catch requires someone actually performing the
-  independent check).
+  a per-declaration compiler-trust axiom. The entries below name the iso-Pallas and iso-Vesta
+  order witnesses and the results that depend on them.
 
 `assert_axioms` matches a permitted `native_decide` axiom by its owning declaration — named inside
 `+native(...)` — rather than by the exact axiom name (whose tail is toolchain-dependent). The
@@ -78,20 +74,23 @@ assert_computable CompElliptic.CurveForms.ShortWeierstrass.instFintypeSWPoint +c
 assert_computable CompElliptic.Curves.Pasta.Pallas.fintypePoints +choice
 assert_computable CompElliptic.Curves.Pasta.Vesta.fintypePoints +choice
 
-/-! ## Concrete closed facts trusting the compiler (`native_decide`) -/
+/-! ## Pasta field and curve data — standard axioms only -/
 
-assert_axioms CompElliptic.Fields.Pasta.pallasBase +native(
-  CompElliptic.Fields.Pasta.pallasBase)
-assert_axioms CompElliptic.Fields.Pasta.vestaBase +native(
-  CompElliptic.Fields.Pasta.vestaBase)
-assert_axioms CompElliptic.Curves.Pasta.Pallas.q_nsmul_Gpt +native(
-  CompElliptic.Curves.Pasta.Pallas.q_nsmul_Gpt)
-assert_axioms CompElliptic.Curves.Pasta.Vesta.p_nsmul_Gpt +native(
-  CompElliptic.Curves.Pasta.Vesta.p_nsmul_Gpt)
-assert_axioms CompElliptic.Curves.Pasta.Pallas.card_eq +native(
-  CompElliptic.Curves.Pasta.Pallas.q_nsmul_Gpt)
-assert_axioms CompElliptic.Curves.Pasta.Vesta.card_eq +native(
-  CompElliptic.Curves.Pasta.Vesta.p_nsmul_Gpt)
+assert_axioms CompElliptic.Fields.Pasta.pallasBase
+assert_axioms CompElliptic.Fields.Pasta.vestaBase
+assert_axioms CompElliptic.Curves.Pasta.Pallas.q_nsmul_Gpt
+assert_axioms CompElliptic.Curves.Pasta.Vesta.p_nsmul_Gpt
+assert_axioms CompElliptic.Curves.Pasta.Pallas.card_eq
+assert_axioms CompElliptic.Curves.Pasta.Vesta.card_eq
+assert_axioms CompElliptic.Curves.Pasta.Pallas.isOdd_zeroRepaired_mapToCurve
+assert_axioms CompElliptic.Curves.Pasta.Vesta.isOdd_zeroRepaired_mapToCurve
+assert_axioms CompElliptic.Curves.Pasta.Pallas.norm_charSum_mapToCurve_sub_zeroRepaired
+assert_axioms CompElliptic.Curves.Pasta.Vesta.norm_charSum_mapToCurve_sub_zeroRepaired
+assert_axioms CompElliptic.Curves.Pasta.Pallas.mapHashOutputsToCurve_eq
+assert_axioms CompElliptic.Curves.Pasta.Vesta.mapHashOutputsToCurve_eq
+
+/-! ## Iso-curve order witnesses and dependent results -/
+
 assert_axioms CompElliptic.Curves.Pasta.Pallas.q_nsmul_isoGpt +native(
   CompElliptic.Curves.Pasta.Pallas.q_nsmul_isoGpt)
 assert_axioms CompElliptic.Curves.Pasta.Vesta.p_nsmul_isoGpt +native(
@@ -101,31 +100,13 @@ assert_axioms CompElliptic.Curves.Pasta.Pallas.iso_card_eq +native(
 assert_axioms CompElliptic.Curves.Pasta.Vesta.iso_card_eq +native(
   CompElliptic.Curves.Pasta.Vesta.p_nsmul_isoGpt)
 assert_axioms CompElliptic.Curves.Pasta.Pallas.iso_map_bijective +native(
-  CompElliptic.Curves.Pasta.Pallas.q_nsmul_isoGpt,
-  CompElliptic.Curves.Pasta.Pallas.q_nsmul_Gpt)
+  CompElliptic.Curves.Pasta.Pallas.q_nsmul_isoGpt)
 assert_axioms CompElliptic.Curves.Pasta.Vesta.iso_map_bijective +native(
-  CompElliptic.Curves.Pasta.Vesta.p_nsmul_isoGpt,
-  CompElliptic.Curves.Pasta.Vesta.p_nsmul_Gpt)
-assert_axioms CompElliptic.Curves.Pasta.Pallas.isOdd_zeroRepaired_mapToCurve +native(
-  CompElliptic.Fields.Pasta.pallasBase)
-assert_axioms CompElliptic.Curves.Pasta.Vesta.isOdd_zeroRepaired_mapToCurve +native(
-  CompElliptic.Fields.Pasta.vestaBase)
-assert_axioms CompElliptic.Curves.Pasta.Pallas.norm_charSum_mapToCurve_sub_zeroRepaired +native(
-  CompElliptic.Fields.Pasta.pallasBase)
-assert_axioms CompElliptic.Curves.Pasta.Vesta.norm_charSum_mapToCurve_sub_zeroRepaired +native(
-  CompElliptic.Fields.Pasta.vestaBase)
+  CompElliptic.Curves.Pasta.Vesta.p_nsmul_isoGpt)
 assert_axioms CompElliptic.Curves.Pasta.Pallas.card_mapToCurve_fibre_le +native(
-  CompElliptic.Fields.Pasta.pallasBase,
-  CompElliptic.Curves.Pasta.Pallas.q_nsmul_Gpt,
   CompElliptic.Curves.Pasta.Pallas.q_nsmul_isoGpt)
 assert_axioms CompElliptic.Curves.Pasta.Vesta.card_mapToCurve_fibre_le +native(
-  CompElliptic.Fields.Pasta.vestaBase,
-  CompElliptic.Curves.Pasta.Vesta.p_nsmul_Gpt,
   CompElliptic.Curves.Pasta.Vesta.p_nsmul_isoGpt)
-assert_axioms CompElliptic.Curves.Pasta.Pallas.mapHashOutputsToCurve_eq +native(
-  CompElliptic.Fields.Pasta.pallasBase)
-assert_axioms CompElliptic.Curves.Pasta.Vesta.mapHashOutputsToCurve_eq +native(
-  CompElliptic.Fields.Pasta.vestaBase)
 
 /-! ## Fast Vesta arithmetic — proven against the affine group law, standard axioms only
 
@@ -258,17 +239,11 @@ assert_axioms CompElliptic.Hashing.sum_abs_prob_dev_transport_le
 
 /-! ### The deployed instances (`Hashing/PastaSSWU.lean`) -/
 
-assert_computable CompElliptic.Curves.Pasta.Pallas.mapToCurve +choice +native(
-  CompElliptic.Fields.Pasta.pallasBase)
-assert_computable CompElliptic.Curves.Pasta.Vesta.mapToCurve +choice +native(
-  CompElliptic.Fields.Pasta.vestaBase)
+assert_computable CompElliptic.Curves.Pasta.Pallas.mapToCurve +choice
+assert_computable CompElliptic.Curves.Pasta.Vesta.mapToCurve +choice
 assert_axioms CompElliptic.Curves.Pasta.Pallas.neg_AB_not_isSquare
 assert_axioms CompElliptic.Curves.Pasta.Vesta.neg_AB_not_isSquare
 assert_axioms CompElliptic.Curves.Pasta.Pallas.weilBounded_zeroRepaired_mapToCurve +native(
-  CompElliptic.Fields.Pasta.pallasBase,
-  CompElliptic.Curves.Pasta.Pallas.q_nsmul_Gpt,
   CompElliptic.Curves.Pasta.Pallas.q_nsmul_isoGpt)
 assert_axioms CompElliptic.Curves.Pasta.Vesta.weilBounded_zeroRepaired_mapToCurve +native(
-  CompElliptic.Fields.Pasta.vestaBase,
-  CompElliptic.Curves.Pasta.Vesta.p_nsmul_Gpt,
   CompElliptic.Curves.Pasta.Vesta.p_nsmul_isoGpt)

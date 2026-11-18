@@ -157,12 +157,11 @@ structure IsValidTonelliShanks {F : Type*} [Field F] [Fintype F]
   oddPart_odd : Odd oddPart := by decide
   /-- There is at least one factor of two (the field is not of characteristic 2). -/
   twoAdicity_pos : 0 < twoAdicity := by decide
-  /-- `rootOfUnity` has multiplicative order exactly `2^twoAdicity`. The order is checked via a
-  primitivity certificate (`rootOfUnity^(2^(S-1)) ≠ 1 = rootOfUnity^(2^S)`); the exponentiation has
-  a field-sized base, so this leg uses `native_decide`. -/
+  /-- `rootOfUnity` has multiplicative order exactly `2^twoAdicity`. The kernel checks the two
+  powers in the primitivity certificate using square-and-multiply. -/
   rootOfUnity_order : orderOf rootOfUnity = 2^twoAdicity := by
     haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
-    refine orderOf_eq_prime_pow (p := 2) ?_ ?_ <;> native_decide
+    refine orderOf_eq_prime_pow (p := 2) ?_ ?_ <;> rw [← fpow_spec] <;> decide +kernel
 
 /-- The data Tonelli–Shanks needs for a field `F`: the 2-adic factorization
 `card-1 = 2^twoAdicity * oddPart`, a primitive `2^twoAdicity`-th root of unity `rootOfUnity`

@@ -64,13 +64,8 @@ The [design principles](README.md#design-principles) followed by this library ar
   file (`pallasBase` / `vestaBase` in `Fields/Pasta.lean`) — each field carries its own sqrt — while
   `Sqrt.lean` stays field-agnostic. A field-level primitive (knows nothing about curves), candidate
   for upstreaming to CompPoly.
-  - [ ] Remove the last `native_decide` from the validity (`rootOfUnity_order`). Plain `decide` is
-    infeasible (a 256-bit-base field exponentiation), and `reduce_mod_char` only does modexp for a
-    *small* base. But `rootOfUnity = 5^T`, so rewrite the two order obligations as small-base-5
-    powers — `rootOfUnity^(2^S) = 5^(p-1) = 1` (Fermat) and `rootOfUnity^(2^(S-1)) = 5^((p-1)/2) = -1`
-    (Euler, i.e. `five_not_isSquare`) — which `reduce_mod_char` *can* evaluate in the kernel, the
-    same machinery the Pratt-certificate legs use. Would make `pallasBase` / `vestaBase` fully
-    kernel-checked.
+  - [x] Check root-of-unity orders by kernel reduction of the verified square-and-multiply
+    exponentiation in `fpow`.
 
 ## CompElliptic — short-Weierstrass form (`CurveForms/ShortWeierstrass.lean`)
 
@@ -137,9 +132,9 @@ types + transport) has been consolidated into these and removed.
   (Mathlib has no Hasse theorem for `WeierstrassCurve`; cited to Hasse, Crelle 175 (1936),
   §3.1/§4.2); capstones `card_eq_of_hasse` (explicit gap) and `card_eq_of_hasse_of_field_ge_37`
   (`37 ≤ #F` plus `r` in the Hasse interval). No `sorry`/`axiom`/`native_decide`; standard axioms.
-- [x] Pallas/Vesta orders (`Curves/PastaOrder.lean`): assuming `HasseBound`, `Pallas.card_eq`
-  (`= PALLAS_SCALAR_CARD`) and `Vesta.card_eq` (`= PALLAS_BASE_CARD`) — the Pasta cycle — with witness
-  `G = (-1, 2)` and `[order] G = 𝒪` discharged by a one-line `native_decide` (fast `•`).
+- [x] Pallas/Vesta orders (`Curves/PastaOrder.lean`): unconditional `Pallas.card_eq`
+  (`= PALLAS_SCALAR_CARD`) and `Vesta.card_eq` (`= PALLAS_BASE_CARD`) — the Pasta cycle — with
+  `G = (-1, 2)` and `[order] G = 𝒪` checked by kernel reduction of binary scalar multiplication.
 - [ ] Small-cofactor variant (`#G = h·r` for known `h`): a straightforward Layer-1 generalization,
   deferred. Needed for Jubjub (cofactor 8), which also needs the Edwards form first.
 

@@ -19,10 +19,10 @@ Instantiates the `CompElliptic.CurveOrder` fibre bound at the two Pasta curves a
 equal orders, though here each order is pinned by its own witness rather than by the
 isogeny).
 
-The test point `G = (-1, 2)` is the prime-order witness, and the witness fact `[order] G = 𝒪`
-(a `≈ 2^254` scalar multiplication) is a one-line `native_decide` now that the `SWPoint` scalar
-action `•` itself computes in `O(log n)`. The only *upper* bound needed is the elementary fibre
-bound `#E(F) ≤ 2·#F + 1`; whether it clears the order threshold is decided by a closed comparison
+The test point `G = (-1, 2)` is the prime-order witness. The kernel checks `[order] G = 𝒪`
+for Pallas and Vesta using the binary scalar action on `SWPoint`. The only *upper* bound needed
+is the elementary fibre bound `#E(F) ≤ 2·#F + 1`; whether it clears the order threshold is
+decided by a closed comparison
 of the two field sizes, and the Pasta cycle puts the two curves on opposite sides of it:
 
 * **Pallas** — order `q = PALLAS_SCALAR_CARD` over the base field of size `p`, and `p < q`, so
@@ -42,10 +42,8 @@ argument does not apply, but none is needed — a `y = 0` point of iso-Vesta wou
 `y = 0` point of Vesta under the isogeny (`ThreeIsogeny.no_y_zero_of_codomain`), and Vesta
 has none.
 
-Per the *Independently re-checkable trust* principle every obligation here is a closed numeric fact
-(`2p + 1 < 2q`, `2q + 1 < 3p`), discharged by kernel `decide`; the only trust is the prime-order
-witnesses (`q_nsmul_Gpt`, `p_nsmul_Gpt`), proved by `native_decide` and appearing in `#print axioms`
-for the two theorems below.
+The kernel checks the Pallas and Vesta generator-order witnesses and the closed field-size
+inequalities. The iso-Pallas and iso-Vesta generator-order witnesses use `native_decide`.
 -/
 
 namespace CompElliptic.Curves.Pasta
@@ -60,7 +58,7 @@ def Gpt : SWPoint curve := ⟨-1, 2, Or.inl (by decide)⟩
 theorem Gpt_ne_zero : Gpt ≠ 0 := by decide
 
 /-- `[q] G = 𝒪`, where `q = PALLAS_SCALAR_CARD` is the Pallas group order. -/
-theorem q_nsmul_Gpt : PALLAS_SCALAR_CARD • Gpt = 0 := by native_decide
+theorem q_nsmul_Gpt : PALLAS_SCALAR_CARD • Gpt = 0 := by decide +kernel
 
 /-- **The Pallas curve group has order `PALLAS_SCALAR_CARD`**, unconditionally.
 
@@ -119,7 +117,7 @@ def Gpt : SWPoint curve := ⟨-1, 2, Or.inl (by decide)⟩
 theorem Gpt_ne_zero : Gpt ≠ 0 := by decide
 
 /-- `[p] G = 𝒪`, where `p = PALLAS_BASE_CARD` is the Vesta group order. -/
-theorem p_nsmul_Gpt : PALLAS_BASE_CARD • Gpt = 0 := by native_decide
+theorem p_nsmul_Gpt : PALLAS_BASE_CARD • Gpt = 0 := by decide +kernel
 
 /-- **The Vesta curve group has order `PALLAS_BASE_CARD`**, unconditionally.
 

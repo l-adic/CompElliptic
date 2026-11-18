@@ -32,9 +32,7 @@ namespace GenuineAutoParam
 /-- The certificate lives in an auto-param, so the axiom is emitted while elaborating the
 structure instance below rather than a tactic block of its own. Lean then records the auxiliary's
 end position at the start of the *next* token — past the end of the owning declaration — which is
-why ownership is decided by the auxiliary's start position. The Tonelli–Shanks data of this
-repository (`CompElliptic.Fields.Pasta.pallasBase`, `vestaBase`) is the census entry with this
-shape. -/
+why ownership is decided by the auxiliary's start position. -/
 structure Certified where
   value : Nat
   small : value < 123457 := by native_decide
