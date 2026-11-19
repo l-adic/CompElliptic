@@ -9,6 +9,7 @@ module
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms
 public import CompElliptic.CoordinateSystem
+public meta import Mathlib.Data.ZMod.Defs
 
 /-!
 # Short-Weierstrass elliptic curves

@@ -10,6 +10,8 @@ public import CompElliptic.CurveForms.ShortWeierstrass
 public import CompElliptic.Fields.Pasta
 public import CompElliptic.Fields.Residue
 public import Mathlib.NumberTheory.LegendreSymbol.Basic
+public meta import CompElliptic.Fields.Pasta
+public meta import Mathlib.Data.ZMod.Defs
 
 /-!
 # The Pasta curves as short-Weierstrass elliptic curves

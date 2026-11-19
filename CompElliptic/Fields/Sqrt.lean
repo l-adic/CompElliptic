@@ -9,6 +9,7 @@ module
 public import Mathlib.FieldTheory.Finite.Basic
 public import Mathlib.Algebra.Group.Defs
 public import Mathlib.Algebra.Field.Defs
+public meta import Mathlib.Data.ZMod.Defs
 
 /-!
 # Computable square roots in prime fields (Tonelli–Shanks)

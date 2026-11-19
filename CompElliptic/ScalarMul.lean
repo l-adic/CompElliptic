@@ -7,6 +7,7 @@ Authors: Daira-Emma Hopwood
 module
 
 public import Mathlib.Data.Nat.Init
+public meta import Mathlib.Data.ZMod.Defs
 
 /-!
 # Scalar multiplication by binary double-and-add

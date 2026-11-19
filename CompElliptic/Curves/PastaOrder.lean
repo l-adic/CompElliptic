@@ -10,6 +10,9 @@ public import CompElliptic.Curves.Pasta
 public import CompElliptic.Curves.IsoPasta
 public import CompElliptic.CurveOrder
 public import CompElliptic.Isogenies.Homomorphism
+public meta import CompElliptic.Curves.Pasta
+public meta import CompElliptic.Fields.Pasta
+public meta import Mathlib.Data.ZMod.Defs
 
 /-!
 # Orders of the Pasta and iso-Pasta curve groups
