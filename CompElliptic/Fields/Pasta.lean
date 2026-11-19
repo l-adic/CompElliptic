@@ -8,6 +8,8 @@ module
 
 public import CompPoly.Fields.PrattCertificate
 public import CompElliptic.Fields.Sqrt
+public meta import CompElliptic.Fields.Sqrt
+public meta import Mathlib.Data.ZMod.Defs
 
 /-!
 # The Pasta (Pallas / Vesta) base and scalar prime fields
