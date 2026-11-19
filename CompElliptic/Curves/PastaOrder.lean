@@ -6,10 +6,10 @@ Authors: Daira-Emma Hopwood, Gregor Mitscha-Baude
 -/
 module
 
-import CompElliptic.Curves.Pasta
-import CompElliptic.Curves.IsoPasta
-import CompElliptic.CurveOrder
-import CompElliptic.Isogenies.Homomorphism
+public import CompElliptic.Curves.Pasta
+public import CompElliptic.Curves.IsoPasta
+public import CompElliptic.CurveOrder
+public import CompElliptic.Isogenies.Homomorphism
 
 /-!
 # Orders of the Pasta and iso-Pasta curve groups

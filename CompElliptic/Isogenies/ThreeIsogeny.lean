@@ -6,9 +6,9 @@ Authors: Daira-Emma Hopwood
 -/
 module
 
-import CompElliptic.CurveForms.ShortWeierstrass
-import Mathlib.Tactic.LinearCombination
-import Mathlib.Tactic.FieldSimp
+public import CompElliptic.CurveForms.ShortWeierstrass
+public import Mathlib.Tactic.LinearCombination
+public import Mathlib.Tactic.FieldSimp
 
 /-!
 # Degree-3 isogenies from Vélu's formulae

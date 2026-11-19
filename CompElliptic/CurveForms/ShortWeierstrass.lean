@@ -6,9 +6,9 @@ Authors: Daira-Emma Hopwood
 -/
 module
 
-import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
-import Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms
-import CompElliptic.CoordinateSystem
+public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
+public import Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms
+public import CompElliptic.CoordinateSystem
 
 /-!
 # Short-Weierstrass elliptic curves

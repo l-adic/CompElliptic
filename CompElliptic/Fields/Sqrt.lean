@@ -6,7 +6,9 @@ Authors: Daira-Emma Hopwood
 -/
 module
 
-import Mathlib.FieldTheory.Finite.Basic
+public import Mathlib.FieldTheory.Finite.Basic
+public import Mathlib.Algebra.Group.Defs
+public import Mathlib.Algebra.Field.Defs
 
 /-!
 # Computable square roots in prime fields (Tonelli–Shanks)

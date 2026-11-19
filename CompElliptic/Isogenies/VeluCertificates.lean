@@ -6,7 +6,8 @@ Authors: Daira-Emma Hopwood
 -/
 module
 
-import Mathlib.Tactic.LinearCombination
+public import Mathlib.Tactic.LinearCombination
+public import Mathlib.Algebra.Ring.Defs
 
 /-!
 # Certificates for the 3-isogeny homomorphism property

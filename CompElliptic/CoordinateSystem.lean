@@ -6,9 +6,9 @@ Authors: Daira-Emma Hopwood
 -/
 module
 
-import Mathlib.Algebra.Group.Defs
-import Mathlib.Algebra.Group.Basic
-import CompElliptic.ScalarMul
+public import Mathlib.Algebra.Group.Defs
+public import Mathlib.Algebra.Group.Basic
+public import CompElliptic.ScalarMul
 
 /-!
 # Coordinate systems

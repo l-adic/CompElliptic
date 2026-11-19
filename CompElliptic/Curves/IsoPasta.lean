@@ -6,8 +6,8 @@ Authors: Daira-Emma Hopwood
 -/
 module
 
-import CompElliptic.Curves.Pasta
-import CompElliptic.Isogenies.ThreeIsogeny
+public import CompElliptic.Curves.Pasta
+public import CompElliptic.Isogenies.ThreeIsogeny
 
 /-!
 # The iso-Pasta curves and their isogenies to Pallas and Vesta

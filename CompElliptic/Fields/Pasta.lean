@@ -6,8 +6,8 @@ Authors: Daira-Emma Hopwood
 -/
 module
 
-import CompPoly.Fields.PrattCertificate
-import CompElliptic.Fields.Sqrt
+public import CompPoly.Fields.PrattCertificate
+public import CompElliptic.Fields.Sqrt
 
 /-!
 # The Pasta (Pallas / Vesta) base and scalar prime fields

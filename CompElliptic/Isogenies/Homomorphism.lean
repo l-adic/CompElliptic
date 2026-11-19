@@ -6,9 +6,9 @@ Authors: Daira-Emma Hopwood
 -/
 module
 
-import CompElliptic.CurveOrder
-import CompElliptic.Isogenies.ThreeIsogeny
-import CompElliptic.Isogenies.VeluCertificates
+public import CompElliptic.CurveOrder
+public import CompElliptic.Isogenies.ThreeIsogeny
+public import CompElliptic.Isogenies.VeluCertificates
 
 /-!
 # The homomorphism property of the 3-isogeny

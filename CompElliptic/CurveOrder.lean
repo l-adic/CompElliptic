@@ -6,8 +6,8 @@ Authors: Daira-Emma Hopwood, Gregor Mitscha-Baude
 -/
 module
 
-import CompElliptic.CurveForms.ShortWeierstrass
-import Mathlib.GroupTheory.OrderOfElement
+public import CompElliptic.CurveForms.ShortWeierstrass
+public import Mathlib.GroupTheory.OrderOfElement
 
 /-!
 # Pinning a prime-order curve group's order without point-counting

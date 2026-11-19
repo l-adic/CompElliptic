@@ -6,9 +6,10 @@ Authors: Gregor Mitscha-Baude
 -/
 module
 
-import Mathlib.FieldTheory.Finite.Basic
-import Mathlib.Tactic.FieldSimp
-import Mathlib.Tactic.LinearCombination
+public import Mathlib.FieldTheory.Finite.Basic
+public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.LinearCombination
+public import Mathlib.Algebra.Field.Defs
 
 /-!
 # Higher-power residues in a finite field

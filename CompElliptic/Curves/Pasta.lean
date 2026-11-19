@@ -6,10 +6,10 @@ Authors: Daira-Emma Hopwood
 -/
 module
 
-import CompElliptic.CurveForms.ShortWeierstrass
-import CompElliptic.Fields.Pasta
-import CompElliptic.Fields.Residue
-import Mathlib.NumberTheory.LegendreSymbol.Basic
+public import CompElliptic.CurveForms.ShortWeierstrass
+public import CompElliptic.Fields.Pasta
+public import CompElliptic.Fields.Residue
+public import Mathlib.NumberTheory.LegendreSymbol.Basic
 
 /-!
 # The Pasta curves as short-Weierstrass elliptic curves
