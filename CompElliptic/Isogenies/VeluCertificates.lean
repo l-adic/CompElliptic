@@ -4,6 +4,8 @@ Released under the Apache License, Version 2.0, or the MIT license, at your opti
 as described in the files LICENSE-APACHE and LICENSE-MIT.
 Authors: Daira-Emma Hopwood
 -/
+module
+
 import Mathlib.Tactic.LinearCombination
 
 /-!
@@ -88,6 +90,8 @@ Vieta elimination of the curve coefficients through the line holds only after
 saturating by the abscissa difference— and 2-power factors from clearing, all
 cancelled by the consumer.
 -/
+
+@[expose] public section
 
 namespace CompElliptic.Isogenies
 

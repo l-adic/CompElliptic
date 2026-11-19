@@ -4,6 +4,8 @@ Released under the Apache License, Version 2.0, or the MIT license, at your opti
 as described in the files LICENSE-APACHE and LICENSE-MIT.
 Authors: Daira-Emma Hopwood
 -/
+module
+
 import CompElliptic.CurveForms.ShortWeierstrass
 import CompElliptic.Fields.Pasta
 import CompElliptic.Fields.Residue
@@ -20,6 +22,8 @@ exercising the raw computable kernel.
 Sanity checks use `native_decide` (compiler-trusted): they exercise the *definitions*
 computationally and are independent of the soundness theorems to come.
 -/
+
+@[expose] public section
 
 namespace CompElliptic.Curves.Pasta
 

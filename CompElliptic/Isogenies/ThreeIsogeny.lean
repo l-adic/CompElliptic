@@ -4,6 +4,8 @@ Released under the Apache License, Version 2.0, or the MIT license, at your opti
 as described in the files LICENSE-APACHE and LICENSE-MIT.
 Authors: Daira-Emma Hopwood
 -/
+module
+
 import CompElliptic.CurveForms.ShortWeierstrass
 import Mathlib.Tactic.LinearCombination
 import Mathlib.Tactic.FieldSimp
@@ -71,6 +73,8 @@ injectivity to a bijection on rational points (`map_bijective`).
   states Vélu's formulae in the Weierstrass form used here (section 25.1.1), and
   section 25.1 notes that an isogeny is automatically a group homomorphism.
 -/
+
+@[expose] public section
 
 open CompElliptic.CurveForms.ShortWeierstrass
 

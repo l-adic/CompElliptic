@@ -4,6 +4,8 @@ Released under the Apache License, Version 2.0, or the MIT license, at your opti
 as described in the files LICENSE-APACHE and LICENSE-MIT.
 Authors: Daira-Emma Hopwood
 -/
+module
+
 import CompElliptic.Curves.Pasta
 import CompElliptic.Isogenies.ThreeIsogeny
 
@@ -35,6 +37,8 @@ Each isogeny is stated twice here, and that is the point of the design:
   on rational points, landing on the target curve, oddness — then apply to the
   deployed constants; `onCurve_iso_map` states the on-curve consequence directly.
 -/
+
+@[expose] public section
 
 open CompElliptic.CurveForms.ShortWeierstrass CompElliptic.Fields.Pasta
 open CompElliptic.Isogenies

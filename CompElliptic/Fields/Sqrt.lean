@@ -4,6 +4,8 @@ Released under the Apache License, Version 2.0, or the MIT license, at your opti
 as described in the files LICENSE-APACHE and LICENSE-MIT.
 Authors: Daira-Emma Hopwood
 -/
+module
+
 import Mathlib.FieldTheory.Finite.Basic
 
 /-!
@@ -47,6 +49,8 @@ root, with the quadratic-residue test folded in) of — and is the algorithm `pa
 
 (Despite the title, this paper covers more cases than even extension fields.)
 -/
+
+@[expose] public section
 
 namespace CompElliptic.Fields
 

@@ -4,6 +4,8 @@ Released under the Apache License, Version 2.0, or the MIT license, at your opti
 as described in the files LICENSE-APACHE and LICENSE-MIT.
 Authors: Daira-Emma Hopwood, Gregor Mitscha-Baude
 -/
+module
+
 import CompElliptic.CurveForms.ShortWeierstrass
 import Mathlib.GroupTheory.OrderOfElement
 
@@ -38,6 +40,8 @@ This is an application of the *Independently re-checkable trust* principle: no g
 assumed, and all that a caller must discharge are closed numeric facts about #F and r, verifiable
 by any independent tool.
 -/
+
+@[expose] public section
 
 namespace CompElliptic.CurveOrder
 

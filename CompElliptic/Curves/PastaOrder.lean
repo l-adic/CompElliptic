@@ -4,6 +4,8 @@ Released under the Apache License, Version 2.0, or the MIT license, at your opti
 as described in the files LICENSE-APACHE and LICENSE-MIT.
 Authors: Daira-Emma Hopwood, Gregor Mitscha-Baude
 -/
+module
+
 import CompElliptic.Curves.Pasta
 import CompElliptic.Curves.IsoPasta
 import CompElliptic.CurveOrder
@@ -47,6 +49,8 @@ Per the *Independently re-checkable trust* principle every obligation here is a 
 witnesses (`q_nsmul_Gpt`, `p_nsmul_Gpt`), proved by `native_decide` and appearing in `#print axioms`
 for the two theorems below.
 -/
+
+@[expose] public section
 
 namespace CompElliptic.Curves.Pasta
 
