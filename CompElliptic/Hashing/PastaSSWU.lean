@@ -235,6 +235,7 @@ theorem weilBounded_zeroRepaired_mapToCurve
     · exact ((congrArg (AddMonoidHom.mk' iso.map iso_map_add)
         (if_pos rfl)).trans (map_zero _)).trans (if_pos rfl).symm
     · simp [zeroRepaired, hu, mapToCurve]
+      rfl
   rw [← hfun]
   exact hcomp
 
@@ -475,6 +476,7 @@ theorem weilBounded_zeroRepaired_mapToCurve
     · exact ((congrArg (AddMonoidHom.mk' iso.map iso_map_add)
         (if_pos rfl)).trans (map_zero _)).trans (if_pos rfl).symm
     · simp [zeroRepaired, hu, mapToCurve]
+      rfl
   rw [← hfun]
   exact hcomp
 

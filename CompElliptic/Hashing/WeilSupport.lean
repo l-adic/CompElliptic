@@ -567,10 +567,10 @@ theorem _root_.CompElliptic.Hashing.sq_or_mul_sq_of_isSquare_adjoinRoot
         (by exact_mod_cast (by norm_num : (1 : ℕ) < 2))
     constructor
     · have h0 : x - x' = 0 := by
-        simpa using congrArg (fun p => Polynomial.coeff p 0) hzero
+        simpa using congrArg (fun p : Polynomial K => p.coeff 0) hzero
       exact sub_eq_zero.mp h0
     · have h1 : y - y' = 0 := by
-        simpa using congrArg (fun p => Polynomial.coeff p 1) hzero
+        simpa using congrArg (fun p : Polynomial K => p.coeff 1) hzero
       exact sub_eq_zero.mp h1
   obtain ⟨z, hz⟩ := h
   obtain ⟨r, rfl⟩ := AdjoinRoot.mk_surjective z
@@ -673,7 +673,7 @@ theorem not_isSquare_adjoinRoot_of_linear
   -- Characteristic ≠ 2 (`Z` is a nonsquare) transfers to `F_q(x)`.
   have h2F : (2 : F) ≠ 0 := Ring.two_ne_zero G.ringChar_ne_two
   have h2P : (2 : Polynomial F) ≠ 0 := fun h => h2F (by
-    simpa using congrArg (fun p => Polynomial.coeff p 0) h)
+    simpa using congrArg (fun p : Polynomial F => p.coeff 0) h)
   have h2 : (2 : RatFunc F) ≠ 0 := fun h => h2P
     (IsFractionRing.injective (Polynomial F) (RatFunc F)
       (by rw [map_ofNat, map_zero]; exact h))

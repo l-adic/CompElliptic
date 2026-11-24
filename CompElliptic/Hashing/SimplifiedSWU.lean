@@ -223,7 +223,16 @@ affine point, never the identity. See the module docstring for the shape of the
 argument. -/
 theorem onCurve_mapXY (G : SSWUParams F) (u : F) :
     OnCurve G.E.A G.E.B (G.mapXY u) := by
-  simp only [mapXY, mapXYUpToSign]
+  -- The sign-matching step does not change the square of the ordinate, so it suffices to put
+  -- the candidate `mapXYUpToSign u` on the curve.
+  suffices h : OnCurve G.E.A G.E.B (G.mapXYUpToSign u) by
+    show OnCurve G.E.A G.E.B ((G.mapXYUpToSign u).1, if G.sgn (G.mapXYUpToSign u).2 = G.sgn u
+      then (G.mapXYUpToSign u).2 else -(G.mapXYUpToSign u).2)
+    simp only [OnCurve] at h ⊢
+    split_ifs
+    · exact h
+    · rwa [neg_sq]
+  simp only [mapXYUpToSign]
   set Zuu := G.Z * u^2 with hZuu
   set ta := Zuu^2 + Zuu with hta
   set x1num := G.E.B * (ta+1) with hx1num
@@ -236,10 +245,6 @@ theorem onCurve_mapXY (G : SSWUParams F) (u : F) :
     split_ifs with h
     · exact mul_ne_zero G.A_nonzero G.Z_nonzero
     · exact mul_ne_zero G.A_nonzero (neg_ne_zero.mpr h)
-  -- The sign-matching step does not change the square of the ordinate.
-  have hsign : ∀ y' : F, (if G.sgn y' = G.sgn u then y' else -y')^2 = y'^2 := by
-    intro y'
-    split_ifs <;> ring
   -- Reduce the curve equation at `xnum/xdiv` to its cleared form.
   have hcleared : ∀ xnum y : F,
       y^2 * xdiv^3 = xnum^3 + G.E.A * xnum * xdiv^2 + G.E.B * xdiv^3 →
@@ -257,7 +262,7 @@ theorem onCurve_mapXY (G : SSWUParams F) (u : F) :
     have hy : (if sr.2 then sr.1 else G.θ * Zuu * u * sr.1) = sr.1 := by simp [hb]
     rw [hx, hy]
     refine hcleared x1num _ ?_
-    rw [hsign sr.1, h1c, hU]
+    rw [h1c, hU]
     ring
   · -- Nonsquare branch.
     have hbf : sr.2 = false := Bool.eq_false_iff.mpr hb
@@ -291,7 +296,6 @@ theorem onCurve_mapXY (G : SSWUParams F) (u : F) :
           = G.θ * Zuu * u * sr.1 := by simp [hbf]
       rw [hx, hy]
       refine hcleared x2num _ ?_
-      rw [hsign (G.θ * Zuu * u * sr.1)]
       calc (G.θ * Zuu * u * sr.1)^2 * xdiv^3
           = G.θ * G.θ * (Zuu^2 * u^2) * (sr.1^2 * xdiv^3) := by ring
         _ = G.θ * G.θ * (Zuu^2 * u^2) * (G.lam * U) := by rw [h2c]
@@ -339,7 +343,7 @@ theorem map_eq_signedLift (G : SSWUParams F) (u : F) :
   apply SWPoint.ext_pair
   rw [show ((G.map u).x, (G.map u).y) = G.mapXY u from rfl]
   simp only [signedLift, candidateMap, mapXY]
-  split_ifs <;> rfl
+  split_ifs with h <;> simp [h]
 
 /-- The candidate map is even up to sign: the square branch is even in the
 input, and the nonsquare branch is odd — its candidate root carries a bare

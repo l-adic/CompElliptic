@@ -44,5 +44,8 @@ rather than a restructuring.
 
 Namespaces are deliberately **unchanged** from upstream (`Montgomery.Native64x8`) — that is the
 whole point of vendoring these files unmodified, and it is what makes the migration a pure
-import-path rewrite. The pinned CompPoly predates the `Montgomery` directory, so nothing
-clashes.
+import-path rewrite. The pinned CompPoly already contains CompPoly#258 and CompPoly#274, so its
+own `CompPoly.Fields.Montgomery` modules declare the same names: no module may import both
+copies. CompPoly's `CompPoly.Fields.Secp256k1` imports its Montgomery stack, which is why
+`CompElliptic/Basic.lean` imports only `CompPoly.Fields.Secp256k1.Basic`. The deletion criterion
+above is met; the migration is pending.
