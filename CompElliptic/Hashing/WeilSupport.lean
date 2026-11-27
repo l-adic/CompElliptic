@@ -735,7 +735,7 @@ theorem v4TestPoly_not_isSquare (hdisc : 4*G.E.A^3 + 27*G.E.B^2 ≠ 0) :
       (algebraMap (Polynomial F) (RatFunc F) G.v4TestPoly)) := by
   have hdeg : (C G.E.A * X + C G.E.B).natDegree = 1 := by
     compute_degree!
-    all_goals exact G.A_nonzero
+    exact G.A_nonzero
   have hcop : IsCoprime (C G.E.A * X + C G.E.B) G.gPoly := by
     refine isCoprime_of_bezout
       (u := (C G.E.A)^2 * X^2 - C G.E.A * C G.E.B * X
@@ -759,7 +759,7 @@ theorem c4TestPoly_not_isSquare (hdisc : 4*G.E.A^3 + 27*G.E.B^2 ≠ 0) :
       (algebraMap (Polynomial F) (RatFunc F) G.c4TestPoly)) := by
   have hdeg : (C G.E.A * X - 3 * C G.E.B).natDegree = 1 := by
     compute_degree!
-    all_goals exact G.A_nonzero
+    exact G.A_nonzero
   have hcop : IsCoprime (C G.E.A * X - 3 * C G.E.B) G.gPoly := by
     refine isCoprime_of_bezout
       (u := -((C G.E.A)^2 * X^2 + 3 * C G.E.A * C G.E.B * X

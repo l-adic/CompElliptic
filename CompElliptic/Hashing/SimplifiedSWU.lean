@@ -273,7 +273,7 @@ theorem onCurve_mapXY (G : SSWUParams F) (u : F) :
     by_cases hta0 : ta = 0
     · -- Exceptional case: criterion 4 makes the ratio a square, contradiction.
       exfalso
-      have hxd : xdiv = G.E.A * G.Z := by rw [hxdiv, if_pos hta0]
+      have hxd : xdiv = G.E.A * G.Z := by rw [hxdiv, ite_eq_left hta0]
       have hx1 : x1num = G.E.B := by rw [hx1num, hta0]; ring
       have hA : G.E.A ≠ 0 := G.A_nonzero
       have hZ : G.Z ≠ 0 := G.Z_nonzero
@@ -286,7 +286,7 @@ theorem onCurve_mapXY (G : SSWUParams F) (u : F) :
       rw [← hsr] at this
       exact hb this
     · -- Generic case: the `Zuu³` identity closes the algebra.
-      have hxd : xdiv = G.E.A * -ta := by rw [hxdiv, if_neg hta0]
+      have hxd : xdiv = G.E.A * -ta := by rw [hxdiv, ite_eq_right hta0]
       -- The SSWU identity: special to the choice of `x1num` and `xdiv`.
       have hkey : Zuu^3 * U = x2num^3 + G.E.A * x2num * xdiv^2 + G.E.B * xdiv^3 := by
         rw [hU, hx2num, hx1num, hxd, hta]

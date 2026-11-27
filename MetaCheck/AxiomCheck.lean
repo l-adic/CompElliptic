@@ -170,8 +170,15 @@ reduction below inhabits `False` by bare self-reference while computing nothing 
 `.defnInfo` that is not `noncomputable`, so the kind and computability checks both pass it. Only
 the definition-safety check rejects it. The kernel independently refuses to let a safe declaration
 depend on an unsafe one, so what the check has to catch is a reduction no safe proof consumes:
-precisely a deliverable endpoint, which the census pins directly for that same reason. -/
+precisely a deliverable endpoint, which the census pins directly for that same reason. Being a
+`def` of a proposition on purpose, it draws the `defProp` warning, which is pinned here. -/
 
+/--
+warning: Definition `unsafeReduction` is a proposition; use `theorem` instead of `def`
+
+Note: This linter can be disabled with `set_option linter.defProp false`
+-/
+#guard_msgs in
 unsafe def unsafeReduction : False := unsafeReduction
 
 /-- error: MetaCheck.AxiomCheck.ComputableSafety.unsafeReduction is marked unsafe -/
