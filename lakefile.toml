@@ -1,6 +1,8 @@
 name = "CompElliptic"
 version = "0.1.0"
 defaultTargets = ["CompElliptic", "MetaCheck"]
+# The files are not written as modules, and they import Mathlib, which is.
+allowNonModules = true
 
 [leanOptions]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`
