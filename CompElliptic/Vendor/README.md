@@ -24,11 +24,11 @@ import paths become `CompElliptic.Vendor.CompPoly.Montgomery.X` →
 
 | File | Upstream original | Change |
 |---|---|---|
-| `Basic.lean` | `CompPoly/Fields/Montgomery/Basic.lean` | none |
+| `Basic.lean` | `CompPoly/Fields/Montgomery/Basic.lean` | `if_pos`/`if_neg` → `ite_eq_left`/`ite_eq_right` (deprecated at Lean 4.36) |
 | `Native64x8Defs.lean` | `CompPoly/Fields/Montgomery/Native64x8.lean` (definitions) | split out, `ℕ` → `Nat`, plus the Pasta constants and monomorphic entry points |
-| `Native64x8.lean` | `CompPoly/Fields/Montgomery/Native64x8.lean` (theorems) | imports the split-out definitions; two `norm_num` calls dropped (Lean 4.30 vs 4.31 `simp` drift) |
+| `Native64x8.lean` | `CompPoly/Fields/Montgomery/Native64x8.lean` (theorems) | imports the split-out definitions; two `norm_num` calls dropped (Lean 4.30 vs 4.31 `simp` drift); `if_pos`/`if_neg` → `ite_eq_left`/`ite_eq_right` |
 | `Native64x8Mul.lean` | same name | import path; one `norm_num` dropped |
-| `Native64x8Field.lean` | same name | import path |
+| `Native64x8Field.lean` | same name | import path; one `letI` → `let` |
 | `Pasta.lean` | `CompPoly/Fields/Pasta/{Basic,Fast}.lean` | **rewritten**: reuses `CompElliptic.Fields.Pasta`'s primes and Pratt certificates instead of vendoring a second copy, so the repo keeps exactly one `Field (ZMod PALLAS_SCALAR_CARD)` instance and the Montgomery carrier bridges directly into `CompElliptic.Curves.Pasta.Fast.Projective.Fq` |
 
 `Pasta.lean` is the one file here that imports CompElliptic (`CompElliptic.Fields.Pasta`); it is
